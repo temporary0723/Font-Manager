@@ -1,0 +1,1127 @@
+/* Font-Manager 확장 스타일 - 폰트 관리 */
+
+/* 메인 컨테이너 */
+.font-manager-main-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 프리셋 드롭다운과 버튼 행 */
+.preset-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+/* 프리셋 드롭다운 */
+.preset-dropdown {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black30a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.preset-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+/* 프리셋 관리 버튼들 */
+.preset-btn {
+    padding: 8px 10px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeQuoteColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    min-width: 36px;
+    max-width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.preset-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: scale(1.05);
+}
+
+/* 폰트 매니저 활성화 섹션 */
+.font-manager-enabled-section {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 설정 백업 섹션 */
+.font-manager-import-export-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+.font-manager-import-export-section h3 {
+    margin: 0 0 15px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+/* Import/Export 버튼 컨테이너 */
+.import-export-buttons-container {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Import/Export 버튼 스타일 */
+.import-export-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    min-width: 140px;
+    flex: 1;
+    max-width: 200px;
+}
+
+.import-export-button:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.import-export-button i {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.import-export-button span {
+    font-weight: 500;
+}
+
+/* 설정 초기화 버튼 특별 스타일 */
+.import-export-button.reset-button {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+
+.import-export-button.reset-button:hover {
+    background-color: rgba(220, 53, 69, 0.2);
+    border-color: #dc3545;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.font-manager-enabled-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.font-manager-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.font-manager-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    cursor: pointer;
+}
+
+.font-manager-toggle {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.font-manager-toggle-label span {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* 비활성화된 섹션 스타일 */
+.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(0.5);
+    transition: all 0.3s ease;
+}
+
+.disabled-section * {
+    cursor: not-allowed !important;
+}
+
+/* UI 폰트 섹션 */
+.ui-font-section,
+.message-font-section,
+.theme-linking-section {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ui-font-section h3,
+.message-font-section h3,
+.theme-linking-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.ui-font-selector,
+.message-font-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.ui-font-dropdown,
+.message-font-dropdown {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.ui-font-dropdown:focus,
+.message-font-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+/* 폰트 조절바 컨테이너 */
+.font-controls {
+    margin-top: 15px;
+}
+
+.font-control-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 15px;
+}
+
+.font-control-row:last-child {
+    margin-bottom: 0;
+}
+
+.font-control-row label {
+    min-width: 60px;
+    max-width: 80px;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* 조절바 스타일 */
+.font-control-row input[type="range"] {
+    flex: 1;
+    height: 6px;
+    background: var(--black50a);
+    border-radius: 3px;
+    outline: none;
+    border: 1px solid var(--SmartThemeBorderColor);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.font-control-row input[type="range"]:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.font-control-row input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--SmartThemeQuoteColor);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--SmartThemeBodyColor);
+    transition: all 0.2s ease;
+}
+
+.font-control-row input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--SmartThemeBodyColor);
+    border-color: var(--SmartThemeQuoteColor);
+    transform: scale(1.1);
+}
+
+.font-control-row input[type="range"]::-moz-range-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--SmartThemeQuoteColor);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--SmartThemeBodyColor);
+    transition: all 0.2s ease;
+}
+
+.font-control-row input[type="range"]::-moz-range-thumb:hover {
+    background: var(--SmartThemeBodyColor);
+    border-color: var(--SmartThemeQuoteColor);
+    transform: scale(1.1);
+}
+
+/* 값 표시 */
+.font-control-row span {
+    min-width: 50px;
+    max-width: 70px;
+    text-align: right;
+    color: var(--SmartThemeQuoteColor);
+    font-size: calc(var(--mainFontSize) * 0.85);
+    font-weight: 600;
+    background-color: var(--black50a);
+    padding: 4px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 기본값 버튼 행 */
+.default-button-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+.default-btn {
+    padding: 8px 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.default-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 폰트 추가 영역 */
+.font-add-area {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.font-add-section {
+    margin-bottom: 20px;
+}
+
+.font-add-section:last-child {
+    margin-bottom: 0;
+}
+
+.font-add-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.font-source-textarea {
+    width: 100%;
+    min-height: 100px;
+    max-width: 100%;
+    padding: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: 'Courier New', monospace;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    resize: vertical;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    overflow-x: auto;
+}
+
+.font-source-textarea:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.font-source-textarea::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
+/* 폰트 가져오기 버튼 컨테이너 */
+.font-import-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.import-font-btn {
+    padding: 12px 24px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+
+.import-font-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 폰트 리스트 영역 */
+.font-list-area {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    background-color: var(--black30a);
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 300px;
+    max-height: 400px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.font-list-title {
+    margin: 0 0 15px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    padding-bottom: 10px;
+}
+
+.font-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    transition: all 0.2s ease;
+    gap: 10px;
+}
+
+.font-item:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+.font-item:last-child {
+    margin-bottom: 0;
+}
+
+.font-name {
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    flex: 1;
+}
+
+.font-preview {
+    display: none;
+}
+
+.remove-font-btn {
+    padding: 6px 8px;
+    background-color: transparent;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.remove-font-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: scale(1.05);
+}
+
+/* 빈 상태 메시지 */
+.no-fonts-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    color: var(--SmartThemeQuoteColor);
+    opacity: 0.8;
+    text-align: center;
+}
+
+.no-fonts-message h4 {
+    margin: 0 0 5px 0;
+    font-size: var(--mainFontSize);
+    color: var(--SmartThemeBodyColor);
+}
+
+.no-fonts-message p {
+    margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+/* 요술봉메뉴 버튼 스타일 */
+#font_manager_button {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 5px;
+    padding: 8px 12px;
+}
+
+#font_manager_button:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    filter: brightness(1.1);
+}
+
+.extensionsMenuExtensionButton {
+    margin-right: 10px;
+    width: 16px;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+#font_manager_button:hover .extensionsMenuExtensionButton {
+    transform: scale(1.1);
+}
+
+/* 폰트 이름 설정 팝업 스타일 */
+.font-name-popup-content {
+    padding: 20px;
+}
+
+.font-name-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black30a);
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    margin-top: 10px;
+    box-sizing: border-box;
+}
+
+.font-name-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+/* 스크롤바 스타일 */
+.font-list-area::-webkit-scrollbar,
+.font-manager-main-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.font-list-area::-webkit-scrollbar-track,
+.font-manager-main-container::-webkit-scrollbar-track {
+    background: var(--black30a);
+    border-radius: 4px;
+}
+
+.font-list-area::-webkit-scrollbar-thumb,
+.font-manager-main-container::-webkit-scrollbar-thumb {
+    background: var(--SmartThemeBorderColor);
+    border-radius: 4px;
+}
+
+.font-list-area::-webkit-scrollbar-thumb:hover,
+.font-manager-main-container::-webkit-scrollbar-thumb:hover {
+    background: var(--SmartThemeQuoteColor);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 600px) {
+    .preset-selector-row {
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    
+    .preset-btn {
+        min-width: 32px;
+        max-width: 45px;
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    /* Import/Export 버튼 세로 배치 */
+    .import-export-buttons-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .import-export-button {
+        max-width: none;
+        width: 100%;
+        min-width: auto;
+        padding: 10px 16px;
+    }
+    
+    .font-item {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .ui-font-selector,
+    .message-font-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .font-control-row {
+        gap: 8px;
+    }
+    
+    .font-control-row label {
+        min-width: 50px;
+        max-width: 70px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+    }
+    
+    .font-control-row span {
+        min-width: 45px;
+        max-width: 60px;
+        font-size: calc(var(--mainFontSize) * 0.8);
+        padding: 3px 5px;
+    }
+    
+    .default-btn {
+        padding: 6px 16px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+        min-width: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .preset-selector-row {
+        gap: 4px;
+        margin-bottom: 15px;
+        justify-content: space-between;
+    }
+    
+    .preset-dropdown {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .preset-btn {
+        min-width: 28px;
+        max-width: 40px;
+        padding: 5px 6px;
+        font-size: 11px;
+    }
+    
+    /* Import/Export 버튼 작은 화면 최적화 */
+    .import-export-buttons-container {
+        gap: 8px;
+    }
+    
+    .import-export-button {
+        padding: 8px 12px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+        gap: 6px;
+    }
+    
+    .import-export-button i {
+        font-size: 12px;
+    }
+    
+    .font-source-textarea {
+        min-height: 80px;
+        padding: 8px;
+    }
+    
+    .font-control-row {
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    
+    .font-control-row label {
+        min-width: 45px;
+        max-width: 60px;
+        flex-basis: auto;
+        margin-bottom: 0;
+    }
+    
+    .font-control-row input[type="range"] {
+        flex: 1;
+        min-width: 100px;
+    }
+    
+    .font-control-row span {
+        min-width: 40px;
+        max-width: 55px;
+        padding: 3px 4px;
+    }
+    
+    .default-btn {
+        padding: 5px 12px;
+        font-size: calc(var(--mainFontSize) * 0.8);
+        min-width: 60px;
+    }
+}
+
+/* 테마 연동 섹션 스타일 */
+.theme-add-form {
+    margin-bottom: 15px;
+}
+
+.theme-inputs-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.theme-button-container {
+    display: flex;
+    justify-content: center;
+}
+
+.theme-name-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.theme-name-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.theme-name-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
+.theme-preset-dropdown {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.theme-preset-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.theme-add-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    min-width: 160px;
+}
+
+.theme-add-button:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-add-button i {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.theme-add-button span {
+    font-weight: 500;
+}
+
+
+.theme-rules-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    padding: 10px;
+}
+
+.theme-rule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black30a);
+    transition: all 0.2s ease;
+    gap: 10px;
+}
+
+.theme-rule-item:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+.theme-rule-item:last-child {
+    margin-bottom: 0;
+}
+
+.theme-rule-info {
+    flex: 1;
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-rule-theme {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: 600;
+}
+
+.theme-rule-arrow {
+    color: var(--grey30);
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.theme-rule-preset {
+    color: var(--SmartThemeBodyColor);
+    font-style: italic;
+}
+
+.remove-theme-rule-btn {
+    padding: 6px 8px;
+    background-color: transparent;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.remove-theme-rule-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: scale(1.05);
+}
+
+.no-theme-rules-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    color: var(--SmartThemeQuoteColor);
+    opacity: 0.8;
+    text-align: center;
+}
+
+.no-theme-rules-message p {
+    margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+/* 테마 연동 반응형 스타일 */
+@media (max-width: 600px) {
+    .theme-inputs-row {
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .theme-name-input,
+    .theme-preset-dropdown {
+        min-width: unset;
+    }
+    
+    .theme-add-button {
+        min-width: auto;
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .theme-rule-info {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        text-align: center;
+    }
+    
+    .theme-rule-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .theme-inputs-row {
+        gap: 6px;
+    }
+    
+    .theme-rule-item {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .theme-add-button {
+        padding: 10px 16px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+        gap: 6px;
+    }
+    
+    .theme-add-button i {
+        font-size: 12px;
+    }
+}
+
+/* 다국어 폰트 섹션 */
+.multi-language-font-section {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--SmartThemeBodyColor);
+}
+
+.multi-language-font-section * {
+    color: var(--SmartThemeBodyColor) !important;
+}
+
+.multi-language-font-section.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.multi-language-font-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+/* 다국어 활성화 토글 */
+.multi-language-toggle-row {
+    margin-bottom: 15px;
+}
+
+.multi-language-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--SmartThemeBodyColor) !important;
+    font-size: var(--mainFontSize);
+    user-select: none;
+}
+
+.multi-language-toggle-label span {
+    color: var(--SmartThemeBodyColor) !important;
+}
+
+.multi-language-toggle {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* 언어별 폰트 선택기들 */
+.multi-language-font-selectors {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.multi-language-font-selectors.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.multi-language-font-selectors.disabled-section .language-label {
+    color: var(--SmartThemeBodyColor) !important;
+    opacity: 0.6;
+}
+
+.multi-language-font-selectors.disabled-section .multi-language-toggle-label span {
+    color: var(--SmartThemeBodyColor) !important;
+    opacity: 0.6;
+}
+
+.language-font-group {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 10px;
+    background-color: var(--black30a);
+}
+
+.language-font-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.language-label {
+    min-width: 60px;
+    color: var(--SmartThemeBodyColor) !important;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    text-align: left;
+}
+
+.language-font-dropdown {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    min-width: 0;
+}
+
+.language-font-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.language-font-dropdown:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+/* 다국어 섹션 반응형 디자인 */
+@media (max-width: 480px) {
+    .language-font-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .language-label {
+        min-width: auto;
+        text-align: center;
+    }
+    
+    .language-font-dropdown {
+        width: 100%;
+    }
+    
+    .language-font-group {
+        padding: 8px;
+    }
+    
+    .multi-language-font-selectors {
+        gap: 10px;
+    }
+} 

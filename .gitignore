@@ -1,0 +1,17 @@
+# 일반적인 개발 파일들
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 에디터 설정 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node.js (만약 필요한 경우)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 

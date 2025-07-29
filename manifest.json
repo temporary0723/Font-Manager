@@ -1,0 +1,11 @@
+{
+    "display_name": "Font Manager",
+    "loading_order": 10,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Font Manager Extension",
+    "version": "1.0.0",
+    "homePage": ""
+} 

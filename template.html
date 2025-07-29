@@ -1,0 +1,187 @@
+<div class="flex-container flexFlowColumn font-manager-main-container">
+    <!-- 프리셋 드롭다운과 관리 버튼들 -->
+    <div class="preset-selector-row">
+        <select id="preset-dropdown" class="preset-dropdown">
+            <!-- 프리셋 옵션들이 여기에 동적으로 삽입됩니다 -->
+        </select>
+        <button id="save-preset-btn" class="preset-btn" title="프리셋 저장">
+            <i class="fa-solid fa-save"></i>
+        </button>
+        <button id="edit-preset-btn" class="preset-btn" title="프리셋 이름 수정">
+            <i class="fa-solid fa-pencil"></i>
+        </button>
+        <button id="delete-preset-btn" class="preset-btn" title="프리셋 삭제">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+        <button id="add-preset-btn" class="preset-btn" title="새 프리셋 추가">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+    
+    <!-- 폰트 매니저 활성화 섹션 -->
+    <div class="font-manager-enabled-section">
+        <h3>폰트 매니저 설정</h3>
+        <div class="font-manager-toggle-row">
+            <label class="font-manager-toggle-label">
+                <input type="checkbox" id="font-manager-enabled-toggle" class="font-manager-toggle">
+                <span>폰트 매니저 활성화</span>
+            </label>
+        </div>
+        
+        <div class="font-manager-import-export-section">
+            <h3>설정 백업</h3>
+            <div class="import-export-buttons-container">
+                <button id="import-settings-btn" class="import-export-button" title="폰트 설정 불러오기">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>설정 불러오기</span>
+                </button>
+                <button id="export-settings-btn" class="import-export-button" title="폰트 설정 내보내기">
+                    <i class="fa-solid fa-download"></i>
+                    <span>설정 내보내기</span>
+                </button>
+                <button id="reset-settings-btn" class="import-export-button reset-button" title="모든 설정을 초기화합니다">
+                    <i class="fa-solid fa-refresh"></i>
+                    <span>설정 초기화</span>
+                </button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+    
+    <!-- UI 폰트 섹션 -->
+    <div class="ui-font-section" id="ui-font-section">
+        <h3>UI 폰트 설정</h3>
+        <div class="ui-font-selector">
+            <select id="ui-font-dropdown" class="ui-font-dropdown">
+                <!-- 로드된 폰트들이 여기에 표시됩니다 -->
+            </select>
+        </div>
+        <div class="font-controls">
+            <div class="font-control-row">
+                <label>사이즈</label>
+                <input type="range" id="ui-font-size-slider" min="10" max="25" value="14" step="1">
+                <span id="ui-font-size-value">14px</span>
+            </div>
+            <div class="font-control-row">
+                <label>굵기</label>
+                <input type="range" id="ui-font-weight-slider" min="0" max="1" value="0" step="0.1">
+                <span id="ui-font-weight-value">0.0px</span>
+            </div>
+            <div class="default-button-row">
+                <button id="ui-font-reset-btn" class="default-btn">기본값</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 메시지 폰트 섹션 -->
+    <div class="message-font-section" id="message-font-section">
+        <h3>메시지 폰트 설정</h3>
+        <div class="message-font-selector">
+            <select id="message-font-dropdown" class="message-font-dropdown">
+                <!-- 로드된 폰트들이 여기에 표시됩니다 -->
+            </select>
+        </div>
+        <div class="font-controls">
+            <div class="font-control-row">
+                <label>사이즈</label>
+                <input type="range" id="chat-font-size-slider" min="10" max="25" value="14" step="1">
+                <span id="chat-font-size-value">14px</span>
+            </div>
+            <div class="font-control-row">
+                <label>입력 사이즈</label>
+                <input type="range" id="input-font-size-slider" min="10" max="25" value="14" step="1">
+                <span id="input-font-size-value">14px</span>
+            </div>
+            <div class="font-control-row">
+                <label>굵기</label>
+                <input type="range" id="chat-font-weight-slider" min="0" max="1" value="0" step="0.1">
+                <span id="chat-font-weight-value">0.0px</span>
+            </div>
+            <div class="font-control-row">
+                <label>줄 간격</label>
+                <input type="range" id="chat-line-height-slider" min="0" max="3" value="1.2" step="0.1">
+                <span id="chat-line-height-value">1.2rem</span>
+            </div>
+            <div class="default-button-row">
+                <button id="message-font-reset-btn" class="default-btn">기본값</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 다국어 폰트 섹션 -->
+    <div class="multi-language-font-section" id="multi-language-font-section">
+        <h3>다국어 폰트 설정</h3>
+        <div class="multi-language-toggle-row">
+            <label class="multi-language-toggle-label">
+                <input type="checkbox" id="multi-language-enabled-toggle" class="multi-language-toggle">
+                <span>다국어 폰트 활성화</span>
+            </label>
+        </div>
+        <div class="multi-language-font-selectors">
+            <div class="language-font-group">
+                <div class="language-font-row">
+                    <label class="language-label">영어</label>
+                    <select id="english-font-dropdown" class="language-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                </div>
+            </div>
+            <div class="language-font-group">
+                <div class="language-font-row">
+                    <label class="language-label">한국어</label>
+                    <select id="korean-font-dropdown" class="language-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                </div>
+            </div>
+            <div class="language-font-group">
+                <div class="language-font-row">
+                    <label class="language-label">일본어</label>
+                    <select id="japanese-font-dropdown" class="language-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                </div>
+            </div>
+            <div class="language-font-group">
+                <div class="language-font-row">
+                    <label class="language-label">중국어</label>
+                    <select id="chinese-font-dropdown" class="language-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 테마 연동 섹션 -->
+    <div class="theme-linking-section" id="theme-linking-section">
+        <h3>테마 연동</h3>
+        <div class="theme-add-form">
+            <div class="theme-inputs-row">
+                <input type="text" id="theme-name-input" class="theme-name-input" placeholder="테마 이름 입력">
+                <select id="theme-preset-dropdown" class="theme-preset-dropdown">
+                    <!-- 프리셋 옵션들이 여기에 동적으로 삽입됩니다 -->
+                </select>
+            </div>
+            <div class="theme-button-container">
+                <button id="add-theme-rule-btn" class="theme-add-button" title="테마 연동 추가">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>테마 연동 추가</span>
+                </button>
+            </div>
+        </div>
+        <div class="theme-rules-list" id="theme-rules-list">
+            <!-- 테마 연동 규칙들이 여기에 표시됩니다 -->
+        </div>
+    </div>
+    
+    <!-- 폰트 추가 영역 -->
+    <div class="font-add-area" id="font-add-area">
+        <!-- 폰트 추가 폼이 여기에 표시됩니다 -->
+    </div>
+    
+    <!-- 폰트 리스트 영역 -->
+    <div class="font-list-area flex1" id="font-list-area">
+        <!-- 불러온 폰트 리스트가 여기에 표시됩니다 -->
+    </div>
+</div> 
