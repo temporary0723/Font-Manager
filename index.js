@@ -1085,7 +1085,8 @@ html body textarea:not(#send_textarea) {
 ${languageFontCss.join('')}
 
 /* MULTI-LANGUAGE MESSAGE FONT APPLICATION */
-.mes *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text,
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
   font-family: ${languageFallbacks.join(', ')}, sans-serif !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1102,7 +1103,8 @@ ${languageFontCss.join('')}
             // 설정된 폰트가 없는 경우
             uiFontCss.push(`
 /* MULTI-LANGUAGE MODE - NO FONTS SET */
-.mes *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text,
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
   font-family: initial !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1132,7 +1134,8 @@ ${languageFontCss.join('')}
         if (currentMessageFontName && actualMessageFontFamily) {
             uiFontCss.push(`
 /* MESSAGE FONT APPLICATION - Font Manager Override */
-.mes *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text,
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
   font-family: "${actualMessageFontFamily}" !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1149,7 +1152,8 @@ ${languageFontCss.join('')}
             // 기본 폰트일 때 font-family를 명시적으로 초기화하고 조절값은 적용
             uiFontCss.push(`
 /* MESSAGE FONT SIZE/WEIGHT APPLICATION - Font Manager Override (Default Font) */
-.mes *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text,
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
   font-family: initial !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1167,9 +1171,9 @@ ${languageFontCss.join('')}
     
     // FontAwesome 아이콘 보호
     uiFontCss.push(`
-/* 메시지 영역 FontAwesome 아이콘 보호 */
-.mes .fa, .mes .fas, .mes .far, .mes .fab, .mes .fal, .mes .fad, .mes .fass, .mes .fasr, .mes .fasl, .mes .fasd,
-.mes [class*="fa-"], .mes i[class*="fa"] {
+/* 메시지 텍스트 영역 FontAwesome 아이콘 보호 */
+.mes_text .fa, .mes_text .fas, .mes_text .far, .mes_text .fab, .mes_text .fal, .mes_text .fad, .mes_text .fass, .mes_text .fasr, .mes_text .fasl, .mes_text .fasd,
+.mes_text [class*="fa-"], .mes_text i[class*="fa"] {
   font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
 }
     `);
