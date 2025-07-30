@@ -2036,6 +2036,7 @@ function setupSillyTavernThemeListeners() {
 // 슬래시 커맨드 등록
 function registerSlashCommands() {
     try {
+        // 폰트 관리 창 열기 커맨드
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'font',
             callback: async (parsedArgs) => {
@@ -2046,6 +2047,75 @@ function registerSlashCommands() {
             namedArgumentList: [],
             returns: '폰트 관리 창 열기',
         }));
+
+        // 폰트 매니저 활성화 커맨드
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'font-enable',
+            callback: async (parsedArgs) => {
+                settings.enabled = true;
+                saveSettings();
+                updateUIFont();
+                return '✅ 폰트 매니저가 활성화되었습니다.';
+            },
+            helpString: '폰트 매니저를 활성화합니다.\n사용법: /font-enable',
+            namedArgumentList: [],
+            returns: '폰트 매니저 활성화',
+        }));
+
+        // 폰트 매니저 비활성화 커맨드
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'font-disable',
+            callback: async (parsedArgs) => {
+                settings.enabled = false;
+                saveSettings();
+                updateUIFont();
+                return '❌ 폰트 매니저가 비활성화되었습니다.';
+            },
+            helpString: '폰트 매니저를 비활성화합니다.\n사용법: /font-disable',
+            namedArgumentList: [],
+            returns: '폰트 매니저 비활성화',
+        }));
+
+        // 프리셋 적용 커맨드
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'font-preset',
+            callback: async (parsedArgs) => {
+                const presetName = parsedArgs.preset?.trim();
+                
+                if (!presetName) {
+                    const presets = settings?.presets || [];
+                    if (presets.length === 0) {
+                        return '❌ 등록된 프리셋이 없습니다.';
+                    }
+                    
+                    const presetList = presets.map(p => `• ${p.name}`).join('\n');
+                    return `사용 가능한 프리셋 목록:\n${presetList}\n\n사용법: /font-preset preset="프리셋이름"`;
+                }
+                
+                const presets = settings?.presets || [];
+                const preset = presets.find(p => p.name.toLowerCase() === presetName.toLowerCase());
+                
+                if (!preset) {
+                    const presetList = presets.map(p => `• ${p.name}`).join('\n');
+                    return `❌ "${presetName}" 프리셋을 찾을 수 없습니다.\n\n사용 가능한 프리셋:\n${presetList}`;
+                }
+                
+                // 프리셋 적용
+                applyPresetById(preset.id);
+                return `✅ "${preset.name}" 프리셋이 적용되었습니다.`;
+            },
+            helpString: '특정 프리셋을 적용합니다.\n사용법: /font-preset preset="프리셋이름"\n프리셋 이름 없이 실행하면 사용 가능한 프리셋 목록을 표시합니다.',
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'preset', 
+                    '적용할 프리셋 이름', 
+                    ARGUMENT_TYPE.STRING, 
+                    false
+                )
+            ],
+            returns: '프리셋 적용 결과',
+        }));
+        
     } catch (error) {
         // 실패 시 5초 후 재시도
         setTimeout(registerSlashCommands, 5000);
