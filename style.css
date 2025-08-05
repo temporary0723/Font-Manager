@@ -551,7 +551,6 @@
 }
 
 #font_manager_button:hover {
-    background-color: var(--SmartThemeQuoteColor);
     filter: brightness(1.1);
 }
 
