@@ -2277,6 +2277,7 @@ function importSettings(file, template) {
                     `  • 프리셋: ${presetName}\n` +
                     `  • 폰트: ${fontCount}개\n\n` +
                     `✅ 기존 설정은 유지되고 새로운 내용만 추가됩니다.\n` +
+                    `🎯 현재 선택된 프리셋은 그대로 유지됩니다.\n` +
                     `(중복되는 이름이 있으면 건너뜁니다)`;
             } else {
                 // 전체 설정 파일인 경우
