@@ -2658,11 +2658,9 @@ function resetSettings(template) {
         // 새로운 설정 저장
         saveSettings();
         
-        // UI 업데이트를 위해 팝업을 닫고 다시 열기
-        template.closest('.popup').find('.popup_button_ok').click();
-        
+        // UI 업데이트 (안전한 방식으로)
         setTimeout(() => {
-            openFontManagementPopup();
+            refreshCurrentPopup(template);
             alert('✅ 모든 설정이 성공적으로 초기화되었습니다!\n\n폰트 매니저가 기본 상태로 되돌아갔습니다.');
         }, 100);
         
