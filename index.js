@@ -2311,24 +2311,9 @@ function importSettings(file, template) {
                 applyPresetById(presetToApply.id);
             }
             
-            // UI 업데이트 (팝업을 다시 열지 않고 현재 팝업만 새로고침)
+            // UI 업데이트 (안전한 방식으로)
             setTimeout(() => {
-                try {
-                    // 현재 열린 팝업의 각 섹션을 다시 렌더링
-                    renderPresetSection(template);
-                    renderUIFontSection(template);
-                    renderMessageFontSection(template);
-                    renderMultiLanguageFontSection(template);
-                    renderThemeLinkingSection(template);
-                    renderFontList(template);
-                    
-                    // 이벤트 리스너 재설정
-                    setupEventListeners(template);
-                    
-                    console.log('[Font Manager] UI 업데이트 완료');
-                } catch (uiError) {
-                    console.warn('[Font Manager] UI 업데이트 중 오류:', uiError);
-                }
+                refreshCurrentPopup(template);
                 
                 let message = '설정이 성공적으로 불러와졌습니다!';
                 if (presetToApply) {
@@ -2348,6 +2333,63 @@ function importSettings(file, template) {
     };
     
     reader.readAsText(file);
+}
+
+// 현재 팝업 새로고침 (새 팝업을 열지 않고 내용만 업데이트)
+function refreshCurrentPopup(template) {
+    try {
+        console.log('[Font Manager] 현재 팝업 새로고침 시작');
+        
+        // 기존 이벤트 리스너 정리 (더 안전하게)
+        template.find('*').off('click change input');
+        
+        // 특정 버튼들의 이벤트 리스너 명시적으로 제거
+        template.find('#export-preset-btn, #export-all-settings-btn, #import-settings-btn').off('click');
+        
+        // 각 섹션을 안전하게 다시 렌더링
+        if (typeof renderPresetDropdown === 'function') {
+            renderPresetDropdown(template);
+        }
+        if (typeof renderToggleSection === 'function') {
+            renderToggleSection(template);
+        }
+        if (typeof renderUIFontSection === 'function') {
+            renderUIFontSection(template);
+        }
+        if (typeof renderMessageFontSection === 'function') {
+            renderMessageFontSection(template);
+        }
+        if (typeof renderMultiLanguageFontSection === 'function') {
+            renderMultiLanguageFontSection(template);
+        }
+        if (typeof renderThemeLinkingSection === 'function') {
+            renderThemeLinkingSection(template);
+        }
+        if (typeof renderFontAddArea === 'function') {
+            renderFontAddArea(template);
+        }
+        if (typeof renderFontList === 'function') {
+            renderFontList(template);
+        }
+        
+        // 이벤트 리스너 재설정
+        if (typeof setupEventListeners === 'function') {
+            setupEventListeners(template);
+        }
+        
+        console.log('[Font Manager] 현재 팝업 새로고침 완료');
+        
+    } catch (error) {
+        console.error('[Font Manager] 팝업 새로고침 중 오류:', error);
+        // 오류 발생 시 최소한의 업데이트만 시도
+        try {
+            if (typeof renderPresetDropdown === 'function') {
+                renderPresetDropdown(template);
+            }
+        } catch (fallbackError) {
+            console.error('[Font Manager] 폴백 업데이트도 실패:', fallbackError);
+        }
+    }
 }
 
 // 전역 설정들의 충돌 없는 병합 처리
