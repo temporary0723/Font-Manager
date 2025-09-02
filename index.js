@@ -2160,8 +2160,19 @@ function importSettings(file, template) {
             // 설정 적용
             const newSettings = importData.settings;
             
+            console.log(`[Font Manager] 설정 불러오기 시작 - 파일 버전: ${importData.version || "1.0"}`);
+            console.log(`[Font Manager] 병합 전 현재 상태:`);
+            console.log(`  - 폰트: ${(settings.fonts || []).length}개`);
+            console.log(`  - 프리셋: ${(settings.presets || []).length}개`);
+            console.log(`  - 테마연동: ${(settings.themeRules || []).length}개`);
+            
             // 전역 설정들의 충돌 없는 병합 처리
             mergeGlobalSettings(newSettings);
+            
+            console.log(`[Font Manager] 병합 완료 후 상태:`);
+            console.log(`  - 폰트: ${(settings.fonts || []).length}개`);
+            console.log(`  - 프리셋: ${(settings.presets || []).length}개`);
+            console.log(`  - 테마연동: ${(settings.themeRules || []).length}개`);
             
             // 가져온 프리셋이 현재 선택된 프리셋인지 확인하고 적용
             let presetToApply = null;
@@ -2211,31 +2222,50 @@ function importSettings(file, template) {
 
 // 전역 설정들의 충돌 없는 병합 처리
 function mergeGlobalSettings(newSettings) {
-    // 기본값 보장
-    Object.assign(settings, defaultSettings);
+    // 기본값 보장 (기존 설정을 덮어쓰지 않고 누락된 속성만 채움)
+    Object.keys(defaultSettings).forEach(key => {
+        if (!settings.hasOwnProperty(key)) {
+            settings[key] = defaultSettings[key];
+        }
+    });
     
     // 1. 폰트 목록 병합 (중복 제거)
     if (newSettings.fonts && Array.isArray(newSettings.fonts)) {
-        const existingFontNames = new Set((settings.fonts || []).map(f => f.name));
+        const existingFonts = settings.fonts || [];
+        const existingFontNames = new Set(existingFonts.map(f => f.name));
         const newFonts = newSettings.fonts.filter(font => !existingFontNames.has(font.name));
-        settings.fonts = [...(settings.fonts || []), ...newFonts];
-        console.log(`[Font Manager] 폰트 병합: 기존 ${existingFontNames.size}개, 새로 추가 ${newFonts.length}개`);
+        
+        console.log(`[Font Manager] 폰트 병합 시작:`);
+        console.log(`  - 기존 폰트: ${existingFonts.length}개 (${Array.from(existingFontNames).join(', ')})`);
+        console.log(`  - 가져올 폰트: ${newSettings.fonts.length}개 (${newSettings.fonts.map(f => f.name).join(', ')})`);
+        console.log(`  - 새로 추가될 폰트: ${newFonts.length}개 (${newFonts.map(f => f.name).join(', ')})`);
+        
+        settings.fonts = [...existingFonts, ...newFonts];
+        console.log(`  - 병합 후 총 폰트: ${settings.fonts.length}개`);
     }
     
     // 2. 프리셋 목록 병합 (중복 제거)
     if (newSettings.presets && Array.isArray(newSettings.presets)) {
-        const existingPresetNames = new Set((settings.presets || []).map(p => p.name));
+        const existingPresets = settings.presets || [];
+        const existingPresetNames = new Set(existingPresets.map(p => p.name));
         const newPresets = newSettings.presets.filter(preset => !existingPresetNames.has(preset.name));
+        
+        console.log(`[Font Manager] 프리셋 병합 시작:`);
+        console.log(`  - 기존 프리셋: ${existingPresets.length}개 (${Array.from(existingPresetNames).join(', ')})`);
+        console.log(`  - 가져올 프리셋: ${newSettings.presets.length}개 (${newSettings.presets.map(p => p.name).join(', ')})`);
+        console.log(`  - 새로 추가될 프리셋: ${newPresets.length}개 (${newPresets.map(p => p.name).join(', ')})`);
         
         // ID 충돌 방지를 위해 새로운 ID 생성
         newPresets.forEach(preset => {
-            if ((settings.presets || []).some(p => p.id === preset.id)) {
+            if (existingPresets.some(p => p.id === preset.id)) {
+                const oldId = preset.id;
                 preset.id = generateId();
+                console.log(`  - 프리셋 "${preset.name}" ID 변경: ${oldId} → ${preset.id}`);
             }
         });
         
-        settings.presets = [...(settings.presets || []), ...newPresets];
-        console.log(`[Font Manager] 프리셋 병합: 기존 ${existingPresetNames.size}개, 새로 추가 ${newPresets.length}개`);
+        settings.presets = [...existingPresets, ...newPresets];
+        console.log(`  - 병합 후 총 프리셋: ${settings.presets.length}개`);
     }
     
     // 3. 테마 연동 규칙 병합 (중복 제거)
@@ -2272,9 +2302,13 @@ function mergeGlobalSettings(newSettings) {
         'chatLineHeight', 'currentPreset'
     ];
     
+    console.log(`[Font Manager] 전역 설정 덮어쓰기:`);
     globalSettingsToOverwrite.forEach(key => {
         if (newSettings.hasOwnProperty(key)) {
-            settings[key] = newSettings[key];
+            const oldValue = settings[key];
+            const newValue = newSettings[key];
+            settings[key] = newValue;
+            console.log(`  - ${key}: ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}`);
         }
     });
 }
