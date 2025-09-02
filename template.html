@@ -29,15 +29,19 @@
         </div>
         
         <div class="font-manager-import-export-section">
-            <h3>프리셋 백업</h3>
+            <h3>설정 백업</h3>
             <div class="import-export-buttons-container">
-                <button id="import-settings-btn" class="import-export-button" title="폰트 설정 불러오기">
+                <button id="import-settings-btn" class="import-export-button" title="설정 파일 불러오기 (프리셋 또는 전체 설정)">
                     <i class="fa-solid fa-upload"></i>
-                    <span>프리셋 불러오기</span>
+                    <span>설정 불러오기</span>
                 </button>
-                <button id="export-settings-btn" class="import-export-button" title="폰트 설정 내보내기">
+                <button id="export-preset-btn" class="import-export-button" title="현재 선택된 프리셋과 관련 폰트만 내보내기">
                     <i class="fa-solid fa-download"></i>
                     <span>프리셋 내보내기</span>
+                </button>
+                <button id="export-all-settings-btn" class="import-export-button" title="모든 폰트, 프리셋, 테마연동 등 전체 설정 내보내기">
+                    <i class="fa-solid fa-database"></i>
+                    <span>전체 설정 내보내기</span>
                 </button>
                 <button id="reset-settings-btn" class="import-export-button reset-button" title="모든 설정을 초기화합니다">
                     <i class="fa-solid fa-refresh"></i>
