@@ -2291,9 +2291,9 @@ function importSettings(file, template) {
                     `  • 프리셋: ${presetCount}개\n` +
                     `  • 폰트: ${fontCount}개\n` +
                     `  • 테마연동: ${themeCount}개\n\n` +
-                    `✅ 기존 설정은 유지되고 새로운 내용만 추가됩니다.\n` +
-                    `⚠️ 전역 설정(활성화, 폰트 크기 등)은 덮어써집니다.\n` +
-                    `🎯 현재 선택된 프리셋은 그대로 유지됩니다.\n\n` +
+                    `✅ 기존 설정은 모두 유지되고 새로운 내용만 추가됩니다.\n` +
+                    `🎯 현재 선택된 프리셋과 설정값들이 그대로 유지됩니다.\n` +
+                    `⚙️ 확장 활성화 상태만 파일의 설정으로 변경됩니다.\n\n` +
                     `💡 안전을 위해 현재 설정을 먼저 백업하는 것을 권장합니다.`;
             }
             
@@ -2460,19 +2460,13 @@ function mergeGlobalSettings(newSettings) {
         console.log(`[Font Manager] 테마 연동 병합: 기존 ${existingThemeNames.size}개, 새로 추가 ${newThemeRules.length}개`);
     }
     
-        // 4. 기타 전역 설정들은 가져온 설정으로 덮어쓰기 (현재 프리셋 제외)
-    const globalSettingsToOverwrite = [
-        'enabled', 'currentUiFont', 'currentMessageFont', 'uiFontSize', 
-        'uiFontWeight', 'chatFontSize', 'inputFontSize', 'chatFontWeight', 
-        'chatLineHeight'
-        // 'currentPreset' 제거 - 현재 선택된 프리셋 유지
-    ];
+        // 4. 확장 활성화 상태만 덮어쓰기 (다른 전역 설정들은 현재 상태 유지)
+    if (newSettings.hasOwnProperty('enabled')) {
+        settings.enabled = newSettings.enabled;
+    }
     
-        globalSettingsToOverwrite.forEach(key => {
-        if (newSettings.hasOwnProperty(key)) {
-            settings[key] = newSettings[key];
-        }
-    });
+    // 다른 전역 설정들(폰트, 크기 등)은 현재 프리셋과의 일관성을 위해 유지
+    // 사용자가 원할 경우 수동으로 프리셋을 변경하여 적용 가능
 }
 
 // 불러오기 데이터 유효성 검사
