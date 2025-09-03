@@ -999,7 +999,7 @@ html body textarea:not(#send_textarea) {
 /* FontAwesome 아이콘 보호 */
 .fa, .fas, .far, .fab, .fal, .fad, .fass, .fasr, .fasl, .fasd,
 [class*="fa-"], i[class*="fa"] {
-  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
 }
         `);
     } else {
@@ -1022,7 +1022,7 @@ html body textarea:not(#send_textarea) {
 /* FontAwesome 아이콘 보호 */
 .fa, .fas, .far, .fab, .fal, .fad, .fass, .fasr, .fasl, .fasd,
 [class*="fa-"], i[class*="fa"] {
-  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
 }
         `);
     }
@@ -1179,7 +1179,7 @@ ${languageFontCss.join('')}
 /* 메시지 텍스트 영역 FontAwesome 아이콘 보호 */
 .mes_text .fa, .mes_text .fas, .mes_text .far, .mes_text .fab, .mes_text .fal, .mes_text .fad, .mes_text .fass, .mes_text .fasr, .mes_text .fasl, .mes_text .fasd,
 .mes_text [class*="fa-"], .mes_text i[class*="fa"] {
-  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "Font Awesome 5 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
 }
     `);
     
