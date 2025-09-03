@@ -279,6 +279,11 @@ async function showFontNamePopup(fontData) {
 
 // 폰트 관리 창 열기
 async function openFontManagementPopup() {
+    // 이미 열린 폰트 관리 팝업이 있는지 확인
+    if ($('.popup:contains("폰트 관리")').length > 0) {
+        return;
+    }
+    
     const template = $(await renderExtensionTemplateAsync(`third-party/${extensionName}`, 'template'));
     
     // 저장된 현재 프리셋이 있으면 선택, 없으면 첫 번째 프리셋 선택
@@ -1667,9 +1672,14 @@ function setupEventListeners(template) {
     // 테마 연동 삭제 버튼들에 이벤트 추가
     setupThemeRuleEventListeners(template);
     
-    // 설정 내보내기 버튼
-    template.find('#export-settings-btn').off('click').on('click', function() {
+    // 프리셋 내보내기 버튼
+    template.find('#export-preset-btn').off('click').on('click', function() {
         exportSettings();
+    });
+    
+    // 전체 설정 내보내기 버튼
+    template.find('#export-all-settings-btn').off('click').on('click', function() {
+        exportAllSettings();
     });
     
     // 설정 불러오기 버튼
@@ -2073,20 +2083,76 @@ async function addToWandMenu() {
 // 설정 내보내기
 function exportSettings() {
     try {
+        if (!selectedPresetId) {
+            alert('내보낼 프리셋을 먼저 선택해주세요.');
+            return;
+        }
+        
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === selectedPresetId);
+        
+        if (!currentPreset) {
+            alert('선택된 프리셋을 찾을 수 없습니다.');
+            return;
+        }
+        
+        // 현재 선택된 프리셋에서 사용되는 폰트들 추출
+        const usedFontNames = new Set();
+        
+        // 프리셋에서 사용하는 폰트들 수집
+        if (currentPreset.uiFont) usedFontNames.add(currentPreset.uiFont);
+        if (currentPreset.messageFont) usedFontNames.add(currentPreset.messageFont);
+        
+        // 다국어 폰트들도 수집
+        if (currentPreset.languageFonts) {
+            Object.values(currentPreset.languageFonts).forEach(fontName => {
+                if (fontName) usedFontNames.add(fontName);
+            });
+        }
+        
+                 // 사용된 폰트들만 필터링
+         const usedFonts = (settings.fonts || []).filter(font => usedFontNames.has(font.name));
+        
+        // 현재 선택된 프리셋 정보
+        const currentPresetInfo = {
+            selectedPresetId: selectedPresetId,
+            selectedPresetName: currentPreset.name
+        };
+        
+        // 최소한의 설정만 포함 (선택된 프리셋과 관련 폰트만)
+        const minimalSettings = {
+            enabled: settings.enabled,
+            fonts: usedFonts,
+            presets: [currentPreset], // 현재 선택된 프리셋만
+            themeRules: [], // 테마 연동은 제외 (필요시 별도 내보내기 기능 추가 가능)
+            // 전역 설정들은 프리셋 적용 시 덮어써지므로 기본값으로
+            currentUiFont: null,
+            currentMessageFont: null,
+            uiFontSize: 14,
+            uiFontWeight: 0,
+            chatFontSize: 14,
+            inputFontSize: 14,
+            chatFontWeight: 0,
+            chatLineHeight: 1.2,
+            currentPreset: selectedPresetId
+        };
+        
         const exportData = {
-            version: "1.0",
+            version: "2.0",
             timestamp: new Date().toISOString(),
-            settings: JSON.parse(JSON.stringify(settings))
+            currentPreset: currentPresetInfo,
+            settings: minimalSettings
         };
         
         const jsonString = JSON.stringify(exportData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         
-        // 파일명 생성 (날짜 포함)
+        // 파일명 생성 (프리셋 이름과 날짜 포함)
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
         const timeStr = now.toTimeString().slice(0, 5).replace(/:/g, '');
-        const filename = `font-manager-settings-${dateStr}-${timeStr}.json`;
+        const safePresetName = currentPreset.name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        const filename = `font-preset-${safePresetName}-${dateStr}-${timeStr}.json`;
         
         // 다운로드
         const url = URL.createObjectURL(blob);
@@ -2100,12 +2166,69 @@ function exportSettings() {
         
         // 성공 메시지
         setTimeout(() => {
-            alert('설정이 성공적으로 내보내졌습니다!\n파일명: ' + filename);
+            alert(`프리셋이 성공적으로 내보내졌습니다!\n\n` +
+                  `프리셋: ${currentPreset.name}\n` +
+                  `폰트: ${usedFonts.length}개\n` +
+                  `파일명: ${filename}`);
         }, 100);
         
     } catch (error) {
         console.error('[Font Manager] 설정 내보내기 실패:', error);
         alert('설정 내보내기에 실패했습니다.\n오류: ' + error.message);
+    }
+}
+
+// 전체 설정 내보내기 (필요시 사용)
+function exportAllSettings() {
+    try {
+        // 현재 선택된 프리셋 정보 포함
+        const currentPresetInfo = selectedPresetId ? {
+            selectedPresetId: selectedPresetId,
+            selectedPresetName: (() => {
+                const presets = settings?.presets || [];
+                const preset = presets.find(p => p.id === selectedPresetId);
+                return preset ? preset.name : null;
+            })()
+        } : null;
+        
+        const exportData = {
+            version: "2.0",
+            timestamp: new Date().toISOString(),
+            currentPreset: currentPresetInfo,
+            settings: JSON.parse(JSON.stringify(settings))
+        };
+        
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // 파일명 생성 (날짜 포함)
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timeStr = now.toTimeString().slice(0, 5).replace(/:/g, '');
+        const filename = `font-manager-all-settings-${dateStr}-${timeStr}.json`;
+        
+        // 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // 성공 메시지
+        setTimeout(() => {
+            alert(`전체 설정이 성공적으로 내보내졌습니다!\n\n` +
+                  `폰트: ${(settings.fonts || []).length}개\n` +
+                  `프리셋: ${(settings.presets || []).length}개\n` +
+                  `테마연동: ${(settings.themeRules || []).length}개\n` +
+                  `파일명: ${filename}`);
+        }, 100);
+        
+    } catch (error) {
+        console.error('[Font Manager] 전체 설정 내보내기 실패:', error);
+        alert('전체 설정 내보내기에 실패했습니다.\n오류: ' + error.message);
     }
 }
 
@@ -2137,30 +2260,73 @@ function importSettings(file, template) {
                 return;
             }
             
-            // 백업 확인
-            const confirmation = confirm(
-                '설정을 불러오면 현재 설정이 모두 덮어써집니다.\n' +
-                '계속하시겠습니까?\n\n' +
-                '(현재 설정을 먼저 내보내기하여 백업하는 것을 권장합니다)'
-            );
+            // 파일 유형에 따른 확인 메시지
+            let confirmationMessage = '';
+            const version = importData.version || "1.0";
+            const isPresetFile = version === "2.0" && importData.currentPreset && 
+                               (importData.settings.presets?.length === 1);
+            
+            if (isPresetFile) {
+                // 프리셋 파일인 경우
+                const presetName = importData.currentPreset.selectedPresetName || '알 수 없는 프리셋';
+                const fontCount = importData.settings.fonts?.length || 0;
+                
+                confirmationMessage = 
+                    `프리셋 파일을 불러오시겠습니까?\n\n` +
+                    `📁 파일 내용:\n` +
+                    `  • 프리셋: ${presetName}\n` +
+                    `  • 폰트: ${fontCount}개\n\n` +
+                    `✅ 기존 설정은 유지되고 새로운 내용만 추가됩니다.\n` +
+                    `🎯 현재 선택된 프리셋은 그대로 유지됩니다.\n` +
+                    `(중복되는 이름이 있으면 건너뜁니다)`;
+            } else {
+                // 전체 설정 파일인 경우
+                const presetCount = importData.settings.presets?.length || 0;
+                const fontCount = importData.settings.fonts?.length || 0;
+                const themeCount = importData.settings.themeRules?.length || 0;
+                
+                confirmationMessage = 
+                    `전체 설정 파일을 불러오시겠습니까?\n\n` +
+                    `📁 파일 내용:\n` +
+                    `  • 프리셋: ${presetCount}개\n` +
+                    `  • 폰트: ${fontCount}개\n` +
+                    `  • 테마연동: ${themeCount}개\n\n` +
+                    `✅ 기존 설정은 모두 유지되고 새로운 내용만 추가됩니다.\n` +
+                    `🎯 현재 선택된 프리셋과 설정값들이 그대로 유지됩니다.\n` +
+                    `⚙️ 확장 활성화 상태만 파일의 설정으로 변경됩니다.\n\n` +
+                    `💡 안전을 위해 현재 설정을 먼저 백업하는 것을 권장합니다.`;
+            }
+            
+            const confirmation = confirm(confirmationMessage);
             
             if (!confirmation) return;
             
             // 설정 적용
             const newSettings = importData.settings;
             
-            // 기본값 보장
-            Object.assign(settings, defaultSettings, newSettings);
+            console.log(`[Font Manager] 설정 불러오기 시작 - 파일 버전: ${importData.version || "1.0"}`);
+            console.log(`[Font Manager] 병합 전 현재 상태:`);
+            console.log(`  - 폰트: ${(settings.fonts || []).length}개`);
+            console.log(`  - 프리셋: ${(settings.presets || []).length}개`);
+            console.log(`  - 테마연동: ${(settings.themeRules || []).length}개`);
+            
+            // 전역 설정들의 충돌 없는 병합 처리
+            mergeGlobalSettings(newSettings);
+            
+            console.log(`[Font Manager] 병합 완료 후 상태:`);
+            console.log(`  - 폰트: ${(settings.fonts || []).length}개`);
+            console.log(`  - 프리셋: ${(settings.presets || []).length}개`);
+            console.log(`  - 테마연동: ${(settings.themeRules || []).length}개`);
             
             // localStorage 저장
             saveSettings();
             
-            // UI 업데이트를 위해 팝업을 닫고 다시 열기
-            template.closest('.popup').find('.popup_button_ok').click();
-            
+            // UI 업데이트 (안전한 방식으로)
             setTimeout(() => {
-                openFontManagementPopup();
-                alert('설정이 성공적으로 불러와졌습니다!');
+                refreshCurrentPopup(template);
+                
+                // 콘솔에만 성공 메시지 출력
+                console.log('[Font Manager] 설정이 성공적으로 불러와졌습니다!');
             }, 100);
             
         } catch (error) {
@@ -2176,21 +2342,164 @@ function importSettings(file, template) {
     reader.readAsText(file);
 }
 
+// 현재 팝업 새로고침 (새 팝업을 열지 않고 내용만 업데이트)
+function refreshCurrentPopup(template) {
+    try {
+        // 기존 이벤트 리스너 정리 (더 안전하게)
+        template.find('*').off('click change input');
+        
+        // 특정 버튼들의 이벤트 리스너 명시적으로 제거
+        template.find('#export-preset-btn, #export-all-settings-btn, #import-settings-btn').off('click');
+        
+        // 각 섹션을 안전하게 다시 렌더링
+        if (typeof renderPresetDropdown === 'function') {
+            renderPresetDropdown(template);
+        }
+        if (typeof renderToggleSection === 'function') {
+            renderToggleSection(template);
+        }
+        if (typeof renderUIFontSection === 'function') {
+            renderUIFontSection(template);
+        }
+        if (typeof renderMessageFontSection === 'function') {
+            renderMessageFontSection(template);
+        }
+        if (typeof renderMultiLanguageFontSection === 'function') {
+            renderMultiLanguageFontSection(template);
+        }
+        if (typeof renderThemeLinkingSection === 'function') {
+            renderThemeLinkingSection(template);
+        }
+        if (typeof renderFontAddArea === 'function') {
+            renderFontAddArea(template);
+        }
+        if (typeof renderFontList === 'function') {
+            renderFontList(template);
+        }
+        
+        // 이벤트 리스너 재설정
+        if (typeof setupEventListeners === 'function') {
+            setupEventListeners(template);
+        }
+        
+    } catch (error) {
+        console.error('[Font Manager] 팝업 새로고침 중 오류:', error);
+        // 오류 발생 시 최소한의 업데이트만 시도
+        try {
+            if (typeof renderPresetDropdown === 'function') {
+                renderPresetDropdown(template);
+            }
+        } catch (fallbackError) {
+            console.error('[Font Manager] 폴백 업데이트도 실패:', fallbackError);
+        }
+    }
+}
+
+// 전역 설정들의 충돌 없는 병합 처리
+function mergeGlobalSettings(newSettings) {
+    // 기본값 보장 (기존 설정을 덮어쓰지 않고 누락된 속성만 채움)
+    Object.keys(defaultSettings).forEach(key => {
+        if (!settings.hasOwnProperty(key)) {
+            settings[key] = defaultSettings[key];
+        }
+    });
+    
+    // 1. 폰트 목록 병합 (중복 제거)
+    if (newSettings.fonts && Array.isArray(newSettings.fonts)) {
+        const existingFonts = settings.fonts || [];
+        const existingFontNames = new Set(existingFonts.map(f => f.name));
+        const newFonts = newSettings.fonts.filter(font => !existingFontNames.has(font.name));
+        
+                 console.log(`[Font Manager] 폰트 병합: 기존 ${existingFonts.length}개, 새로 추가 ${newFonts.length}개`);
+         
+         settings.fonts = [...existingFonts, ...newFonts];
+    }
+    
+    // 2. 프리셋 목록 병합 (중복 제거)
+    if (newSettings.presets && Array.isArray(newSettings.presets)) {
+        const existingPresets = settings.presets || [];
+        const existingPresetNames = new Set(existingPresets.map(p => p.name));
+        const newPresets = newSettings.presets.filter(preset => !existingPresetNames.has(preset.name));
+        
+                 console.log(`[Font Manager] 프리셋 병합: 기존 ${existingPresets.length}개, 새로 추가 ${newPresets.length}개`);
+         
+         // ID 충돌 방지를 위해 새로운 ID 생성
+         newPresets.forEach(preset => {
+             if (existingPresets.some(p => p.id === preset.id)) {
+                 preset.id = generateId();
+             }
+         });
+         
+         settings.presets = [...existingPresets, ...newPresets];
+    }
+    
+    // 3. 테마 연동 규칙 병합 (중복 제거)
+    if (newSettings.themeRules && Array.isArray(newSettings.themeRules)) {
+        const existingThemeNames = new Set((settings.themeRules || []).map(r => r.themeName));
+        const newThemeRules = newSettings.themeRules.filter(rule => !existingThemeNames.has(rule.themeName));
+        
+        // 프리셋 ID 매핑 (가져온 프리셋의 새로운 ID로 업데이트)
+        newThemeRules.forEach(rule => {
+            const oldPresetId = rule.presetId;
+            const newPreset = settings.presets.find(p => 
+                newSettings.presets && newSettings.presets.some(np => 
+                    np.id === oldPresetId && np.name === p.name
+                )
+            );
+            if (newPreset) {
+                rule.presetId = newPreset.id;
+            }
+            
+            // ID 충돌 방지
+            if ((settings.themeRules || []).some(r => r.id === rule.id)) {
+                rule.id = generateId();
+            }
+        });
+        
+        settings.themeRules = [...(settings.themeRules || []), ...newThemeRules];
+        console.log(`[Font Manager] 테마 연동 병합: 기존 ${existingThemeNames.size}개, 새로 추가 ${newThemeRules.length}개`);
+    }
+    
+        // 4. 확장 활성화 상태만 덮어쓰기 (다른 전역 설정들은 현재 상태 유지)
+    if (newSettings.hasOwnProperty('enabled')) {
+        settings.enabled = newSettings.enabled;
+    }
+    
+    // 다른 전역 설정들(폰트, 크기 등)은 현재 프리셋과의 일관성을 위해 유지
+    // 사용자가 원할 경우 수동으로 프리셋을 변경하여 적용 가능
+}
+
 // 불러오기 데이터 유효성 검사
 function validateImportData(data) {
     try {
         // 기본 구조 확인
         if (!data || typeof data !== 'object') {
+            console.warn('[Font Manager] 유효성 검사 실패: 데이터가 객체가 아님');
             return false;
         }
         
         if (!data.settings || typeof data.settings !== 'object') {
+            console.warn('[Font Manager] 유효성 검사 실패: settings가 객체가 아님');
             return false;
         }
         
         const settings = data.settings;
         
-        // 필수 속성들 확인
+                 // 버전 확인
+         const version = data.version || "1.0";
+        
+        // 새로운 형식(v2.0)인 경우 추가 검증
+        if (version === "2.0") {
+            // currentPreset 정보가 있는 경우 검증
+            if (data.currentPreset) {
+                if (!data.currentPreset.selectedPresetId || !data.currentPreset.selectedPresetName) {
+                    console.warn('[Font Manager] v2.0 형식: currentPreset 정보가 불완전함');
+                    // 경고만 하고 계속 진행 (필수가 아님)
+                }
+            }
+        }
+        
+        // 필수 속성들 확인 (배열이어야 함)
         const requiredArrays = ['fonts', 'presets'];
         for (const prop of requiredArrays) {
             if (!Array.isArray(settings[prop])) {
@@ -2199,8 +2508,17 @@ function validateImportData(data) {
             }
         }
         
+        // 선택적 배열들 확인 (있으면 배열이어야 함)
+        const optionalArrays = ['themeRules'];
+        for (const prop of optionalArrays) {
+            if (settings[prop] && !Array.isArray(settings[prop])) {
+                console.warn(`[Font Manager] 유효성 검사 실패: ${prop}가 배열이 아님`);
+                return false;
+            }
+        }
+        
         // 폰트 배열 유효성 검사
-        if (settings.fonts) {
+        if (settings.fonts && settings.fonts.length > 0) {
             for (const font of settings.fonts) {
                 if (!font.id || !font.name || !font.type) {
                     console.warn('[Font Manager] 유효성 검사 실패: 폰트 객체가 필수 속성을 누락');
@@ -2210,7 +2528,7 @@ function validateImportData(data) {
         }
         
         // 프리셋 배열 유효성 검사
-        if (settings.presets) {
+        if (settings.presets && settings.presets.length > 0) {
             for (const preset of settings.presets) {
                 if (!preset.id || !preset.name) {
                     console.warn('[Font Manager] 유효성 검사 실패: 프리셋 객체가 필수 속성을 누락');
@@ -2219,7 +2537,17 @@ function validateImportData(data) {
             }
         }
         
-        return true;
+        // 테마 연동 규칙 유효성 검사 (있는 경우)
+        if (settings.themeRules && settings.themeRules.length > 0) {
+            for (const rule of settings.themeRules) {
+                if (!rule.id || !rule.themeName || !rule.presetId) {
+                    console.warn('[Font Manager] 유효성 검사 실패: 테마 연동 규칙이 필수 속성을 누락');
+                    return false;
+                }
+            }
+        }
+        
+                 return true;
         
     } catch (error) {
         console.error('[Font Manager] 유효성 검사 중 오류:', error);
@@ -2312,11 +2640,9 @@ function resetSettings(template) {
         // 새로운 설정 저장
         saveSettings();
         
-        // UI 업데이트를 위해 팝업을 닫고 다시 열기
-        template.closest('.popup').find('.popup_button_ok').click();
-        
+        // UI 업데이트 (안전한 방식으로)
         setTimeout(() => {
-            openFontManagementPopup();
+            refreshCurrentPopup(template);
             alert('✅ 모든 설정이 성공적으로 초기화되었습니다!\n\n폰트 매니저가 기본 상태로 되돌아갔습니다.');
         }, 100);
         
