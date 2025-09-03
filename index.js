@@ -2096,22 +2096,8 @@ function exportSettings() {
             return;
         }
         
-        // 현재 선택된 프리셋에서 사용되는 폰트들 추출
-        const usedFontNames = new Set();
-        
-        // 프리셋에서 사용하는 폰트들 수집
-        if (currentPreset.uiFont) usedFontNames.add(currentPreset.uiFont);
-        if (currentPreset.messageFont) usedFontNames.add(currentPreset.messageFont);
-        
-        // 다국어 폰트들도 수집
-        if (currentPreset.languageFonts) {
-            Object.values(currentPreset.languageFonts).forEach(fontName => {
-                if (fontName) usedFontNames.add(fontName);
-            });
-        }
-        
-                 // 사용된 폰트들만 필터링
-         const usedFonts = (settings.fonts || []).filter(font => usedFontNames.has(font.name));
+        // 현재 전역에서 사용 중인 모든 폰트들 포함 (전체 설정 내보내기와 동일하게)
+        const allFonts = settings.fonts || [];
         
         // 현재 선택된 프리셋 정보
         const currentPresetInfo = {
@@ -2119,10 +2105,10 @@ function exportSettings() {
             selectedPresetName: currentPreset.name
         };
         
-        // 최소한의 설정만 포함 (선택된 프리셋과 관련 폰트만)
+        // 최소한의 설정만 포함 (선택된 프리셋과 모든 폰트)
         const minimalSettings = {
             enabled: settings.enabled,
-            fonts: usedFonts,
+            fonts: allFonts,
             presets: [currentPreset], // 현재 선택된 프리셋만
             themeRules: [], // 테마 연동은 제외 (필요시 별도 내보내기 기능 추가 가능)
             // 전역 설정들은 프리셋 적용 시 덮어써지므로 기본값으로
@@ -2168,7 +2154,7 @@ function exportSettings() {
         setTimeout(() => {
             alert(`프리셋이 성공적으로 내보내졌습니다!\n\n` +
                   `프리셋: ${currentPreset.name}\n` +
-                  `폰트: ${usedFonts.length}개\n` +
+                  `폰트: ${allFonts.length}개 (전체 폰트 포함)\n` +
                   `파일명: ${filename}`);
         }, 100);
         
