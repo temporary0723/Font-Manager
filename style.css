@@ -196,7 +196,6 @@
 /* UI 폰트 섹션 */
 .ui-font-section,
 .message-font-section,
-.tag-custom-section,
 .theme-linking-section {
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
@@ -209,7 +208,6 @@
 
 .ui-font-section h3,
 .message-font-section h3,
-.tag-custom-section h3,
 .theme-linking-section h3 {
     margin: 0 0 10px 0;
     color: var(--SmartThemeBodyColor);
@@ -973,6 +971,226 @@
     .theme-add-button i {
         font-size: 12px;
     }
+}
+
+/* 태그 커스텀 섹션 */
+.tag-custom-section {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.tag-custom-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.tag-custom-guide {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+}
+
+.guide-text {
+    margin: 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.85);
+    line-height: 1.5;
+}
+
+.guide-text strong {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.tag-add-form {
+    margin-bottom: 15px;
+}
+
+.tag-inputs-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.tag-name-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.tag-name-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.tag-name-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
+.tag-font-dropdown {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+}
+
+.tag-font-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.tag-button-container {
+    display: flex;
+    justify-content: center;
+}
+
+.tag-add-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    min-width: 160px;
+}
+
+.tag-add-button:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tag-add-button i {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.tag-add-button span {
+    font-weight: 500;
+}
+
+.tag-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    padding: 10px;
+}
+
+.tag-rule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black30a);
+    transition: all 0.2s ease;
+    gap: 10px;
+}
+
+.tag-rule-item:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+.tag-rule-item:last-child {
+    margin-bottom: 0;
+}
+
+.tag-rule-info {
+    flex: 1;
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tag-rule-tag {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.tag-rule-arrow {
+    color: var(--grey30);
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.tag-rule-font {
+    color: var(--SmartThemeBodyColor);
+    font-style: italic;
+}
+
+.remove-tag-rule-btn {
+    padding: 6px 8px;
+    background-color: transparent;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.remove-tag-rule-btn:hover {
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
+    transform: scale(1.05);
+}
+
+.no-tag-rules-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    color: var(--SmartThemeQuoteColor);
+    opacity: 0.8;
+    text-align: center;
+}
+
+.no-tag-rules-message p {
+    margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.9);
 }
 
 /* 다국어 폰트 섹션 */

@@ -34,8 +34,8 @@ const defaultSettings = {
     chatLineHeight: 1.2,
     // 테마 연동 규칙들
     themeRules: [],
-    // 태그 커스텀 설정
-    customTags: []
+    // 태그 커스텀 규칙들
+    tagCustomRules: []
 };
 
 // 현재 선택된 프리셋 ID와 임시 폰트들
@@ -109,8 +109,7 @@ function initSettings() {
     settings.currentPreset = settings.currentPreset ?? null;
     settings.enabled = settings.enabled ?? false;
     settings.themeRules = settings.themeRules ?? [];
-    // 태그 커스텀 기본값 보장
-    settings.customTags = settings.customTags ?? [];
+    settings.tagCustomRules = settings.tagCustomRules ?? [];
     // 폰트 이름 기본값 보장
     settings.currentUiFont = settings.currentUiFont ?? null;
     settings.currentMessageFont = settings.currentMessageFont ?? null;
@@ -149,7 +148,8 @@ function initSettings() {
             chatFontSize: 14,
             inputFontSize: 14,
             chatFontWeight: 0,
-            chatLineHeight: 1.2
+            chatLineHeight: 1.2,
+            tagCustomRules: []
         };
         settings.presets.push(defaultPreset);
         settings.currentPreset = defaultPreset.id;
@@ -438,7 +438,6 @@ function updateSectionsState(template, enabled) {
     const sections = [
         '#ui-font-section',
         '#message-font-section',
-        '#tag-custom-section',
         '#multi-language-font-section', 
         '#theme-linking-section',
         '#font-add-area',
@@ -458,6 +457,18 @@ function updateSectionsState(template, enabled) {
             section.find('input, select, button, textarea').prop('disabled', true);
         }
     });
+    
+    // 태그 커스텀 섹션도 포함
+    const tagCustomSection = template.find('#tag-custom-section');
+    if (tagCustomSection.length > 0) {
+        if (enabled) {
+            tagCustomSection.removeClass('disabled-section');
+            tagCustomSection.find('input, select, button, textarea').prop('disabled', false);
+        } else {
+            tagCustomSection.addClass('disabled-section');
+            tagCustomSection.find('input, select, button, textarea').prop('disabled', true);
+        }
+    }
     
     // 프리셋 요소들도 같이 비활성화/활성화
     if (enabled) {
@@ -586,59 +597,6 @@ function renderMessageFontSection(template) {
     template.find('#chat-font-weight-value').text(chatFontWeight.toFixed(1) + 'px');
     template.find('#chat-line-height-slider').val(chatLineHeight);
     template.find('#chat-line-height-value').text(chatLineHeight.toFixed(1) + 'rem');
-}
-
-// 태그 커스텀 섹션 렌더링
-function renderTagCustomSection(template) {
-    const fonts = settings?.fonts || [];
-    const customTags = settings?.customTags || [];
-    const dropdown = template.find('#tag-font-dropdown');
-    
-    // 폰트 드롭다운 옵션 생성
-    dropdown.empty();
-    dropdown.append('<option value="">기본 폰트</option>');
-    
-    fonts.forEach(font => {
-        dropdown.append(`<option value="${font.name}">${font.name}</option>`);
-    });
-    
-    // 태그 리스트 렌더링
-    renderTagList(template);
-}
-
-// 태그 리스트 렌더링
-function renderTagList(template) {
-    const customTags = settings?.customTags || [];
-    const fonts = settings?.fonts || [];
-    const listArea = template.find('#tag-list');
-    
-    if (customTags.length === 0) {
-        listArea.html(`
-            <div class="no-tags-message">
-                <p>추가된 태그가 없습니다</p>
-            </div>
-        `);
-    } else {
-        let tagsHtml = '';
-        customTags.forEach(tag => {
-            const font = fonts.find(f => f.name === tag.fontName);
-            const fontDisplayName = font ? font.name : (tag.fontName || '기본 폰트');
-            
-            tagsHtml += `
-                <div class="tag-item">
-                    <div class="tag-info">
-                        <span class="tag-name">&lt;${tag.name}&gt;</span>
-                        <span class="tag-arrow">→</span>
-                        <span class="tag-font">${fontDisplayName}</span>
-                    </div>
-                    <button class="remove-tag-btn" data-id="${tag.id}" title="태그 삭제">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
-        });
-        listArea.html(tagsHtml);
-    }
 }
 
 // 테마 연동 섹션 렌더링
@@ -1242,34 +1200,6 @@ ${languageFontCss.join('')}
 }
     `);
     
-    // 태그 커스텀 CSS 생성
-    const customTags = settings?.customTags || [];
-    if (customTags.length > 0 && settings.enabled) {
-        const tagCss = [];
-        const fonts = settings?.fonts || [];
-        
-        customTags.forEach(tag => {
-            if (!tag.fontName) return;
-            
-            const selectedFont = fonts.find(font => font.name === tag.fontName);
-            if (!selectedFont) return;
-            
-            const actualFontFamily = selectedFont.fontFamily || tag.fontName;
-            const tagNameLower = tag.name.toLowerCase();
-            
-            // 태그 내부 텍스트에 폰트 적용 (정규식으로 태그 매칭)
-            // CSS만으로는 태그를 제거할 수 없으므로 JavaScript에서 처리
-            // 여기서는 폰트만 적용하고, 태그 제거는 processMessageTags 함수에서 처리
-        });
-        
-        if (tagCss.length > 0) {
-            uiFontCss.push(`
-/* 태그 커스텀 폰트 적용 */
-${tagCss.join('\n')}
-            `);
-        }
-    }
-    
     const finalCss = [
         '/*',
         ' * === CSS VARIABLES ===',
@@ -1428,13 +1358,6 @@ function setupEventListeners(template) {
         saveSettings();
         updateUIFont(); // 토글 상태 변경 시 스타일 업데이트
         updateSectionsState(template, settings.enabled); // 섹션들 활성화/비활성화
-        
-        // 태그 처리 시작/중지
-        if (settings.enabled) {
-            setTimeout(startMessageTagProcessing, 100);
-        } else {
-            stopMessageTagProcessing();
-        }
     });
     
     // 프리셋 드롭다운 변경 이벤트
@@ -1477,7 +1400,6 @@ function setupEventListeners(template) {
             
             renderUIFontSection(template);
             renderMessageFontSection(template);
-            renderTagCustomSection(template);
             renderMultiLanguageFontSection(template);
             setupEventListeners(template);
             updateUIFont(); // 조절값 변경사항 즉시 적용
@@ -1529,7 +1451,8 @@ function setupEventListeners(template) {
                 id: generateId(),
                 name: presetName,
                 uiFont: null,
-                messageFont: null
+                messageFont: null,
+                tagCustomRules: []
             };
             
             // 프리셋 추가
@@ -1542,7 +1465,6 @@ function setupEventListeners(template) {
             renderPresetDropdown(template);
             renderUIFontSection(template);
             renderMessageFontSection(template);
-            renderTagCustomSection(template);
             renderMultiLanguageFontSection(template);
             renderThemeLinkingSection(template);
             setupEventListeners(template);
@@ -1724,48 +1646,6 @@ function setupEventListeners(template) {
         updateUIFont();
     });
     
-    // 태그 추가 버튼
-    template.find('#add-tag-btn').off('click').on('click', function() {
-        const tagName = template.find('#tag-name-input').val().trim();
-        const fontName = template.find('#tag-font-dropdown').val();
-        
-        if (!tagName) {
-            alert('태그 이름을 입력해주세요.');
-            return;
-        }
-        
-        // 중복 검사 (대소문자 구분 없음)
-        const customTags = settings?.customTags || [];
-        const tagNameLower = tagName.toLowerCase();
-        if (customTags.some(tag => tag.name.toLowerCase() === tagNameLower)) {
-            alert('이미 존재하는 태그 이름입니다.\n다른 이름을 사용해주세요.');
-            return;
-        }
-        
-        // 새 태그 추가
-        const newTag = {
-            id: generateId(),
-            name: tagName,
-            fontName: fontName || null
-        };
-        
-        settings.customTags = settings.customTags || [];
-        settings.customTags.push(newTag);
-        
-        // UI 초기화 및 업데이트
-        template.find('#tag-name-input').val('');
-        template.find('#tag-font-dropdown').val('');
-        renderTagCustomSection(template);
-        setupTagEventListeners(template);
-        
-        saveSettings();
-        updateUIFont(); // 태그 추가 시 폰트 업데이트
-        alert('태그가 추가되었습니다.');
-    });
-    
-    // 태그 삭제 버튼들에 이벤트 추가
-    setupTagEventListeners(template);
-    
     // 테마 연동 추가 버튼
     template.find('#add-theme-rule-btn').off('click').on('click', function() {
         const themeName = template.find('#theme-name-input').val().trim();
@@ -1810,6 +1690,49 @@ function setupEventListeners(template) {
     // 테마 연동 삭제 버튼들에 이벤트 추가
     setupThemeRuleEventListeners(template);
     
+    // 태그 추가 버튼
+    template.find('#add-tag-btn').off('click').on('click', function() {
+        const tagName = template.find('#tag-name-input').val().trim();
+        const fontName = template.find('#tag-font-dropdown').val();
+        
+        if (!tagName) {
+            alert('태그 이름을 입력해주세요.');
+            return;
+        }
+        
+        // 태그 이름 정규화 (대소문자 구분 없이 저장)
+        const normalizedTagName = tagName.toUpperCase();
+        
+        // 중복 검사 (대소문자 구분 없이)
+        const tagCustomRules = settings?.tagCustomRules || [];
+        const existingTag = tagCustomRules.find(rule => rule.tagName.toUpperCase() === normalizedTagName);
+        if (existingTag) {
+            alert('이미 존재하는 태그입니다.');
+            return;
+        }
+        
+        // 새 태그 규칙 추가
+        const newRule = {
+            id: generateId(),
+            tagName: normalizedTagName,
+            fontName: fontName || null
+        };
+        
+        settings.tagCustomRules.push(newRule);
+        
+        // UI 초기화 및 업데이트
+        template.find('#tag-name-input').val('');
+        template.find('#tag-font-dropdown').val('');
+        renderTagList(template);
+        setupTagRuleEventListeners(template);
+        
+        saveSettings();
+        applyTagFonts(); // 태그 폰트 즉시 적용
+    });
+    
+    // 태그 삭제 버튼들에 이벤트 추가
+    setupTagRuleEventListeners(template);
+    
     // 프리셋 내보내기 버튼
     template.find('#export-preset-btn').off('click').on('click', function() {
         exportSettings();
@@ -1841,35 +1764,6 @@ function setupEventListeners(template) {
     });
 }
 
-// 태그 이벤트 리스너 설정
-function setupTagEventListeners(template) {
-    template.find('.remove-tag-btn').off('click').on('click', function() {
-        const tagId = $(this).data('id');
-        if (confirm('이 태그를 삭제하시겠습니까?')) {
-            deleteTag(template, tagId);
-        }
-    });
-}
-
-// 태그 삭제
-function deleteTag(template, tagId) {
-    if (!settings?.customTags) return;
-    
-    const customTags = settings.customTags;
-    const tagIndex = customTags.findIndex(tag => tag.id === tagId);
-    
-    if (tagIndex !== -1) {
-        customTags.splice(tagIndex, 1);
-        
-        // UI 업데이트
-        renderTagCustomSection(template);
-        setupTagEventListeners(template);
-        
-        saveSettings();
-        updateUIFont(); // 태그 삭제 시 폰트 업데이트
-    }
-}
-
 // 테마 규칙 이벤트 리스너 설정
 function setupThemeRuleEventListeners(template) {
     template.find('.remove-theme-rule-btn').off('click').on('click', function() {
@@ -1898,6 +1792,35 @@ function deleteThemeRule(template, ruleId) {
     }
 }
 
+// 태그 규칙 이벤트 리스너 설정
+function setupTagRuleEventListeners(template) {
+    template.find('.remove-tag-rule-btn').off('click').on('click', function() {
+        const ruleId = $(this).data('id');
+        if (confirm('이 태그를 삭제하시겠습니까?')) {
+            deleteTagRule(template, ruleId);
+        }
+    });
+}
+
+// 태그 규칙 삭제
+function deleteTagRule(template, ruleId) {
+    if (!settings?.tagCustomRules) return;
+    
+    const tagCustomRules = settings.tagCustomRules;
+    const ruleIndex = tagCustomRules.findIndex(rule => rule.id === ruleId);
+    
+    if (ruleIndex !== -1) {
+        tagCustomRules.splice(ruleIndex, 1);
+        
+        // UI 업데이트
+        renderTagList(template);
+        setupTagRuleEventListeners(template);
+        
+        saveSettings();
+        applyTagFonts(); // 태그 폰트 다시 적용
+    }
+}
+
 // 현재 설정값들을 설정에 저장 (팝업 저장 버튼용)
 function saveCurrentSettings() {
     // 현재 선택된 프리셋을 설정에 저장
@@ -1919,8 +1842,7 @@ function saveCurrentSettings() {
             currentPreset.inputFontSize = tempInputFontSize ?? settings.inputFontSize;
             currentPreset.chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
             currentPreset.chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight;
-            // 태그 커스텀 설정 저장
-            currentPreset.customTags = settings.customTags ? JSON.parse(JSON.stringify(settings.customTags)) : [];
+            currentPreset.tagCustomRules = settings.tagCustomRules ? [...settings.tagCustomRules] : [];
         }
     }
     
@@ -1981,8 +1903,6 @@ function saveCurrentPreset() {
         preset.inputFontSize = tempInputFontSize ?? settings.inputFontSize;
         preset.chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
         preset.chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight;
-        // 태그 커스텀 설정 저장
-        preset.customTags = settings.customTags ? JSON.parse(JSON.stringify(settings.customTags)) : [];
         
         // 전역 설정에도 저장
         settings.currentUiFont = tempUiFont;
@@ -2046,7 +1966,6 @@ function deletePreset(template, presetId) {
         renderPresetDropdown(template);
         renderUIFontSection(template);
         renderMessageFontSection(template);
-        renderTagCustomSection(template);
         renderMultiLanguageFontSection(template);
         renderThemeLinkingSection(template);
         setupEventListeners(template);
@@ -2086,6 +2005,8 @@ function updateAllFonts() {
     updateUIFont();
     // 테마 자동 감지 시작
     startThemeDetection();
+    // 태그 폰트 적용 시작
+    startTagFontApplication();
 }
 
 // 테마 감지 및 자동 프리셋 적용 시작
@@ -2169,10 +2090,7 @@ function applyPresetById(presetId) {
         settings.inputFontSize = preset.inputFontSize ?? 14;
         settings.chatFontWeight = preset.chatFontWeight ?? 0;
         settings.chatLineHeight = preset.chatLineHeight ?? 1.2;
-        // 태그 커스텀 설정 적용
-        if (preset.customTags) {
-            settings.customTags = JSON.parse(JSON.stringify(preset.customTags));
-        }
+        settings.tagCustomRules = preset.tagCustomRules ? [...preset.tagCustomRules] : [];
         
         // 현재 프리셋 설정
         settings.currentPreset = presetId;
@@ -2195,12 +2113,6 @@ function applyPresetById(presetId) {
     
     // 폰트 적용
     updateUIFont();
-    
-    // 태그 처리 재시작
-    if (settings.enabled) {
-        stopMessageTagProcessing();
-        setTimeout(startMessageTagProcessing, 100);
-    }
 }
 
 // SillyTavern 테마 이벤트 감지 설정
@@ -2223,6 +2135,159 @@ function setupSillyTavernThemeListeners() {
             }
         }
     };
+}
+
+// 태그 폰트 적용 시작
+function startTagFontApplication() {
+    if (!settings.enabled) return;
+    
+    // 초기 적용
+    setTimeout(() => {
+        applyTagFonts();
+    }, 1000);
+    
+    // MutationObserver로 새 메시지 감지
+    const observer = new MutationObserver((mutations) => {
+        let shouldApply = false;
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        if ($(node).hasClass('mes_text') || $(node).find('.mes_text').length > 0) {
+                            shouldApply = true;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (shouldApply) {
+            setTimeout(() => {
+                applyTagFonts();
+            }, 100);
+        }
+    });
+    
+    // 채팅 영역 감시
+    const chatContainer = document.querySelector('#chat, .chat, #chat-container, .chat-container');
+    if (chatContainer) {
+        observer.observe(chatContainer, {
+            childList: true,
+            subtree: true
+        });
+    }
+}
+
+// 태그 폰트 적용
+function applyTagFonts() {
+    if (!settings.enabled || !settings.tagCustomRules || settings.tagCustomRules.length === 0) {
+        return;
+    }
+    
+    const fonts = settings?.fonts || [];
+    const tagCustomRules = settings.tagCustomRules;
+    
+    // 모든 메시지 텍스트 영역 찾기
+    $('.mes_text').each(function() {
+        const $mesText = $(this);
+        
+        // 이미 처리된 메시지는 건너뛰기 (중복 처리 방지)
+        if ($mesText.data('tag-font-applied')) {
+            return;
+        }
+        
+        // 메시지 요소의 부모를 찾아서 원본 메시지 데이터 찾기 시도
+        const $messageElement = $mesText.closest('.mes, .message, [class*="message"]');
+        let originalText = null;
+        
+        // 편집 가능한 메시지의 경우 원본 텍스트 가져오기 시도
+        const $editButton = $messageElement.find('button[title*="편집"], button[title*="Edit"], .edit-message-btn');
+        if ($editButton.length > 0) {
+            // 편집 버튼이 있으면 메시지 데이터에서 원본 텍스트 찾기 시도
+            // 실제로는 메시지 데이터 구조에 따라 달라질 수 있음
+        }
+        
+        // 현재 표시된 텍스트 가져오기
+        const currentText = $mesText.text();
+        if (!currentText) return;
+        
+        // 메시지의 data 속성이나 다른 곳에서 원본 텍스트 찾기 시도
+        // 실리태번의 경우 메시지 데이터가 특정 속성에 저장되어 있을 수 있음
+        const messageId = $messageElement.attr('data-message-id') || $messageElement.attr('id');
+        
+        // 각 태그 규칙에 대해 처리
+        tagCustomRules.forEach(rule => {
+            const tagName = rule.tagName;
+            const fontName = rule.fontName;
+            
+            if (!fontName) return; // 폰트가 설정되지 않은 경우 건너뛰기
+            
+            const font = fonts.find(f => f.name === fontName);
+            if (!font) return;
+            
+            const actualFontFamily = font.fontFamily || fontName;
+            
+            // 태그 패턴 찾기 (대소문자 구분 없이, 여러 줄 지원)
+            // 실리태번에서는 태그가 제거되므로, 원본 메시지 데이터를 찾아야 함
+            // 일단 현재 텍스트에서 태그가 남아있는지 확인
+            const tagPattern = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi');
+            
+            // 현재 텍스트에 태그가 있는지 확인 (편집 모드 등)
+            if (tagPattern.test(currentText)) {
+                // 태그를 찾아서 span으로 감싸기
+                const processedHtml = currentText.replace(tagPattern, (match, content) => {
+                    return `<span class="font-manager-tag-${tagName.toLowerCase()}" style="font-family: '${actualFontFamily}', sans-serif !important;">${content}</span>`;
+                });
+                
+                // HTML 업데이트
+                if (processedHtml !== currentText) {
+                    $mesText.html(processedHtml);
+                }
+            } else {
+                // 태그가 이미 제거된 경우, 메시지의 원본 데이터를 찾아야 함
+                // 실리태번의 메시지 구조에 따라 다를 수 있음
+                // 일단은 메시지 요소의 data 속성이나 숨겨진 요소에서 찾기 시도
+                const $hiddenText = $messageElement.find('[data-original-text], .original-text, [data-message-text]');
+                if ($hiddenText.length > 0) {
+                    const hiddenText = $hiddenText.text() || $hiddenText.attr('data-original-text') || $hiddenText.attr('data-message-text');
+                    if (hiddenText && tagPattern.test(hiddenText)) {
+                        // 원본 텍스트에서 태그 찾기
+                        const matches = [];
+                        let match;
+                        tagPattern.lastIndex = 0; // 리셋
+                        while ((match = tagPattern.exec(hiddenText)) !== null) {
+                            matches.push({
+                                content: match[1],
+                                start: match.index,
+                                end: match.index + match[0].length
+                            });
+                        }
+                        
+                        // 현재 텍스트에서 해당 위치 찾아서 폰트 적용
+                        if (matches.length > 0) {
+                            let processedHtml = currentText;
+                            // 간단한 방법: 태그 내용이 포함된 부분 찾기
+                            matches.forEach(m => {
+                                const contentIndex = processedHtml.indexOf(m.content);
+                                if (contentIndex !== -1) {
+                                    const before = processedHtml.substring(0, contentIndex);
+                                    const after = processedHtml.substring(contentIndex + m.content.length);
+                                    processedHtml = before + `<span class="font-manager-tag-${tagName.toLowerCase()}" style="font-family: '${actualFontFamily}', sans-serif !important;">${m.content}</span>` + after;
+                                }
+                            });
+                            
+                            if (processedHtml !== currentText) {
+                                $mesText.html(processedHtml);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 처리 완료 표시
+        $mesText.data('tag-font-applied', true);
+    });
 }
 
 // 슬래시 커맨드 등록
@@ -2293,7 +2358,6 @@ function exportSettings() {
             fonts: allFonts,
             presets: [currentPreset], // 현재 선택된 프리셋만
             themeRules: [], // 테마 연동은 제외 (필요시 별도 내보내기 기능 추가 가능)
-            customTags: currentPreset.customTags ? JSON.parse(JSON.stringify(currentPreset.customTags)) : [], // 태그 커스텀 포함
             // 전역 설정들은 프리셋 적용 시 덮어써지므로 기본값으로
             currentUiFont: null,
             currentMessageFont: null,
@@ -2533,11 +2597,11 @@ function refreshCurrentPopup(template) {
         if (typeof renderMessageFontSection === 'function') {
             renderMessageFontSection(template);
         }
-        if (typeof renderTagCustomSection === 'function') {
-            renderTagCustomSection(template);
-        }
         if (typeof renderMultiLanguageFontSection === 'function') {
             renderMultiLanguageFontSection(template);
+        }
+        if (typeof renderTagCustomSection === 'function') {
+            renderTagCustomSection(template);
         }
         if (typeof renderThemeLinkingSection === 'function') {
             renderThemeLinkingSection(template);
@@ -2632,21 +2696,20 @@ function mergeGlobalSettings(newSettings) {
         console.log(`[Font Manager] 테마 연동 병합: 기존 ${existingThemeNames.size}개, 새로 추가 ${newThemeRules.length}개`);
     }
     
-    // 4. 태그 커스텀 병합 (중복 제거)
-    if (newSettings.customTags && Array.isArray(newSettings.customTags)) {
-        const existingTags = settings.customTags || [];
-        const existingTagNames = new Set(existingTags.map(t => t.name.toLowerCase()));
-        const newTags = newSettings.customTags.filter(tag => !existingTagNames.has(tag.name.toLowerCase()));
+    // 4. 태그 커스텀 규칙 병합 (중복 제거)
+    if (newSettings.tagCustomRules && Array.isArray(newSettings.tagCustomRules)) {
+        const existingTagNames = new Set((settings.tagCustomRules || []).map(r => r.tagName.toUpperCase()));
+        const newTagRules = newSettings.tagCustomRules.filter(rule => !existingTagNames.has(rule.tagName.toUpperCase()));
         
         // ID 충돌 방지
-        newTags.forEach(tag => {
-            if (existingTags.some(t => t.id === tag.id)) {
-                tag.id = generateId();
+        newTagRules.forEach(rule => {
+            if ((settings.tagCustomRules || []).some(r => r.id === rule.id)) {
+                rule.id = generateId();
             }
         });
         
-        settings.customTags = [...existingTags, ...newTags];
-        console.log(`[Font Manager] 태그 커스텀 병합: 기존 ${existingTags.length}개, 새로 추가 ${newTags.length}개`);
+        settings.tagCustomRules = [...(settings.tagCustomRules || []), ...newTagRules];
+        console.log(`[Font Manager] 태그 커스텀 병합: 기존 ${existingTagNames.size}개, 새로 추가 ${newTagRules.length}개`);
     }
     
         // 5. 확장 활성화 상태만 덮어쓰기 (다른 전역 설정들은 현재 상태 유지)

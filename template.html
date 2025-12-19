@@ -116,19 +116,16 @@
     <div class="tag-custom-section" id="tag-custom-section">
         <h3>태그 커스텀</h3>
         <div class="tag-custom-guide">
-            <p class="tag-guide-text">
-                태그를 사용하여 특정 텍스트에 다른 폰트를 적용할 수 있습니다.<br>
-                예: MEMO 태그를 추가하고 폰트를 선택하면, <code>&lt;MEMO&gt;메모 내용&lt;/MEMO&gt;</code> 형태의 텍스트가 해당 폰트로 표시됩니다.<br>
-                • 대소문자 구분 없음 (MEMO, Memo, memo 모두 동일하게 처리)<br>
-                • 여러 줄로 구분된 태그도 지원<br>
-                • 편집창에서는 태그가 보이지만, 실제 표시 화면에서는 태그가 제거되고 폰트만 적용됩니다.
+            <p class="guide-text">
+                태그 이름을 입력하고 폰트를 선택하면, 해당 태그로 감싸진 텍스트에 폰트가 적용됩니다.<br>
+                예: &lt;MEMO&gt;메모 내용&lt;/MEMO&gt; → 메모 내용 부분에 선택한 폰트가 적용됩니다.<br>
+                <strong>특징:</strong> 대소문자 구분 없음 (MEMO, Memo, memo 모두 동일) | 여러 줄 태그 지원 | 중복 태그 자동 처리
             </p>
         </div>
         <div class="tag-add-form">
             <div class="tag-inputs-row">
-                <input type="text" id="tag-name-input" class="tag-name-input" placeholder="태그 이름 (예: MEMO)" maxlength="50">
+                <input type="text" id="tag-name-input" class="tag-name-input" placeholder="태그 이름 (예: MEMO)">
                 <select id="tag-font-dropdown" class="tag-font-dropdown">
-                    <option value="">기본 폰트</option>
                     <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
                 </select>
             </div>
