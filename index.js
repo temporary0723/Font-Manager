@@ -187,35 +187,9 @@ function getChatData() {
     return null;
 }
 
-// 에디터가 열려있는지 확인하는 함수
-function isEditorOpen() {
-    // SillyTavern의 에디터 모달이나 팝업이 열려있는지 확인
-    // 일반적으로 에디터가 열리면 특정 클래스나 요소가 나타남
-    const editorModal = document.querySelector('.mes_edit_modal, .edit_message_modal, [class*="edit"][class*="modal"], .mes_text[contenteditable="true"]');
-    if (editorModal) return true;
-    
-    // 에디터 관련 요소가 있는지 확인
-    const editorElements = document.querySelectorAll('[class*="edit"], [id*="edit"]');
-    for (let elem of editorElements) {
-        const style = window.getComputedStyle(elem);
-        if (style.display !== 'none' && style.visibility !== 'hidden' && 
-            (elem.classList.contains('modal') || elem.classList.contains('popup'))) {
-            // 메시지 편집 관련 모달인지 확인
-            if (elem.querySelector('.mes_text') || elem.querySelector('textarea')) {
-                return true;
-            }
-        }
-    }
-    
-    return false;
-}
-
 // 메시지에 태그 커스텀 폰트 적용
 function applyCustomTagFonts() {
     if (!settings.enabled) return;
-    
-    // 에디터가 열려있으면 태그를 적용하지 않음
-    if (isEditorOpen()) return;
     
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
@@ -238,6 +212,16 @@ function applyCustomTagFonts() {
         
         const messageContent = messageElement.querySelector('.mes_text');
         if (!messageContent) return;
+        
+        // 에디터 모드인지 확인 (textarea나 contenteditable 요소가 있으면 에디터 모드)
+        const hasTextarea = messageContent.querySelector('textarea') !== null;
+        const isContentEditable = messageContent.contentEditable === 'true' || 
+                                  messageContent.querySelector('[contenteditable="true"]') !== null;
+        
+        // 에디터 모드인 경우 태그를 적용하지 않음
+        if (hasTextarea || isContentEditable) {
+            return;
+        }
         
         // 메시지 내부 데이터에서 태그 찾기 (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
         let processedContent = message.mes;
@@ -282,87 +266,121 @@ function applyCustomTagFonts() {
 function setupCustomTagObserver() {
     if (!settings.enabled) return;
     
-    let editorWasOpen = false;
-    let editorCloseTimeout = null;
+    // 에디터 상태 추적을 위한 맵
+    const editingMessages = new Set();
     
     const observer = new MutationObserver((mutations) => {
         let shouldApply = false;
-        const editorCurrentlyOpen = isEditorOpen();
-        
-        // 에디터가 닫힌 경우 감지
-        if (editorWasOpen && !editorCurrentlyOpen) {
-            // 에디터가 닫혔으므로 태그를 다시 적용
-            clearTimeout(editorCloseTimeout);
-            editorCloseTimeout = setTimeout(() => {
-                applyCustomTagFonts();
-            }, 200);
-        }
-        
-        // 에디터 상태 업데이트
-        editorWasOpen = editorCurrentlyOpen;
+        let shouldCheckEditorClose = false;
         
         mutations.forEach((mutation) => {
-            // 새 메시지가 추가된 경우
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                for (let node of mutation.addedNodes) {
-                    if (node.nodeType === Node.ELEMENT_NODE &&
-                        (node.classList?.contains('mes') ||
-                         node.querySelector?.('.mes'))) {
-                        shouldApply = true;
-                        break;
+            if (mutation.type === 'childList') {
+                // 새 메시지 추가 감지
+                if (mutation.addedNodes.length > 0) {
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE &&
+                            (node.classList?.contains('mes') ||
+                             node.querySelector?.('.mes'))) {
+                            shouldApply = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // 에디터 열림/닫힘 감지
+                if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                    // 추가된 노드 중 textarea나 contenteditable 요소 확인
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const textarea = node.tagName === 'TEXTAREA' ? node : node.querySelector?.('textarea');
+                            const contentEditable = node.contentEditable === 'true' || node.querySelector?.('[contenteditable="true"]');
+                            
+                            if (textarea || contentEditable) {
+                                const mesElement = node.closest?.('.mes');
+                                if (mesElement) {
+                                    const mesId = mesElement.getAttribute('mesid');
+                                    if (mesId) {
+                                        editingMessages.add(mesId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 제거된 노드 중 textarea나 contenteditable 요소 확인 (에디터 닫힘)
+                    for (let node of mutation.removedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const textarea = node.tagName === 'TEXTAREA' ? node : node.querySelector?.('textarea');
+                            const contentEditable = node.contentEditable === 'true' || node.querySelector?.('[contenteditable="true"]');
+                            
+                            if (textarea || contentEditable) {
+                                const mesElement = node.closest?.('.mes');
+                                if (mesElement) {
+                                    const mesId = mesElement.getAttribute('mesid');
+                                    if (mesId && editingMessages.has(mesId)) {
+                                        editingMessages.delete(mesId);
+                                        shouldCheckEditorClose = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // .mes_text 내부의 textarea나 contenteditable 변화 감지
+                    if (mutation.target) {
+                        const mesText = mutation.target.closest?.('.mes_text');
+                        if (mesText) {
+                            const mesElement = mesText.closest?.('.mes');
+                            if (mesElement) {
+                                const mesId = mesElement.getAttribute('mesid');
+                                if (mesId) {
+                                    const hasTextarea = mesText.querySelector('textarea') !== null;
+                                    const isContentEditable = mesText.contentEditable === 'true' || 
+                                                              mesText.querySelector('[contenteditable="true"]') !== null;
+                                    
+                                    if (hasTextarea || isContentEditable) {
+                                        if (!editingMessages.has(mesId)) {
+                                            editingMessages.add(mesId);
+                                        }
+                                    } else {
+                                        if (editingMessages.has(mesId)) {
+                                            editingMessages.delete(mesId);
+                                            shouldCheckEditorClose = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
             
-            // 메시지 내용이 변경된 경우 (수정 완료 시)
-            if (mutation.type === 'childList' && mutation.target) {
+            // 속성 변화 감지 (contenteditable 속성 변경)
+            if (mutation.type === 'attributes' && mutation.attributeName === 'contenteditable') {
                 const target = mutation.target;
-                // .mes_text 요소의 내용이 변경된 경우
-                if (target.classList?.contains('mes_text') || 
-                    target.closest?.('.mes_text') ||
-                    target.querySelector?.('.mes_text')) {
-                    // 에디터가 열려있지 않은 경우에만 적용
-                    if (!editorCurrentlyOpen) {
-                        shouldApply = true;
-                    }
-                }
-            }
-            
-            // 메시지 요소의 innerHTML이 변경된 경우
-            if (mutation.type === 'childList' && mutation.target) {
-                const mesElement = mutation.target.closest?.('.mes');
+                const mesElement = target.closest?.('.mes');
                 if (mesElement) {
-                    // 에디터가 열려있지 않은 경우에만 적용
-                    if (!editorCurrentlyOpen) {
-                        shouldApply = true;
+                    const mesId = mesElement.getAttribute('mesid');
+                    if (mesId) {
+                        if (target.contentEditable === 'true') {
+                            editingMessages.add(mesId);
+                        } else {
+                            if (editingMessages.has(mesId)) {
+                                editingMessages.delete(mesId);
+                                shouldCheckEditorClose = true;
+                            }
+                        }
                     }
                 }
             }
         });
         
-        if (shouldApply && !editorCurrentlyOpen) {
+        // 새 메시지가 추가되었거나 에디터가 닫혔을 때 태그 적용
+        if (shouldApply || shouldCheckEditorClose) {
             setTimeout(() => {
-                // 에디터가 닫힌 후에만 태그 적용
-                if (!isEditorOpen()) {
-                    applyCustomTagFonts();
-                }
+                applyCustomTagFonts();
             }, 100);
         }
-    });
-    
-    // 전체 문서를 관찰하여 에디터 모달의 표시/숨김을 감지
-    const documentObserver = new MutationObserver((mutations) => {
-        const editorCurrentlyOpen = isEditorOpen();
-        
-        // 에디터가 닫힌 경우 감지
-        if (editorWasOpen && !editorCurrentlyOpen) {
-            clearTimeout(editorCloseTimeout);
-            editorCloseTimeout = setTimeout(() => {
-                applyCustomTagFonts();
-            }, 200);
-        }
-        
-        editorWasOpen = editorCurrentlyOpen;
     });
     
     const chatContainer = document.querySelector('#chat');
@@ -370,17 +388,10 @@ function setupCustomTagObserver() {
         observer.observe(chatContainer, {
             childList: true,
             subtree: true,
-            characterData: false // innerHTML 변경은 childList로 감지됨
+            attributes: true,
+            attributeFilter: ['contenteditable']
         });
     }
-    
-    // 문서 전체를 관찰하여 에디터 모달의 표시/숨김을 감지
-    documentObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class']
-    });
 }
 
 
