@@ -262,17 +262,27 @@ function applyCustomTagFonts(forceRefresh = false) {
         }
         
         // 이미 처리된 표시가 있는지 확인 (data 속성으로 확인)
-        if (!forceRefresh && messageContent.hasAttribute('data-tag-processed')) {
+        // 단, forceRefresh이거나 내용이 변경되었을 수 있으므로 체크
+        const currentContentHash = messageContent.innerHTML;
+        const lastProcessedHash = messageContent.getAttribute('data-tag-processed-hash');
+        if (!forceRefresh && messageContent.hasAttribute('data-tag-processed') && lastProcessedHash === currentContentHash) {
             return;
         }
         
-        // 메시지 내부 데이터에서 태그 찾기 (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
-        let processedContent = message.mes;
+        // 현재 화면에 표시된 내용 가져오기 (번역문이면 번역문, 아니면 원문)
+        // 번역문에도 태그가 포함되어 있으므로 현재 HTML에서 직접 태그를 찾아서 폰트 적용
+        let processedContent = messageContent.innerHTML;
         let hasChanges = false;
         
-        // 모든 태그에 대해 한 번에 처리
+        // 현재 HTML 내용에서 태그 찾아서 폰트 적용
         tagConfigs.forEach(tagConfig => {
-            processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
+            // 이미 span으로 감싸져 있지 않은 태그만 처리
+            const regex = new RegExp(`<${tagConfig.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}>([\\s\\S]*?)</${tagConfig.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}>`, 'gi');
+            processedContent = processedContent.replace(regex, (match, content) => {
+                // 이미 data-custom-tag-font 속성이 있는 경우 건너뛰기
+                if (match.includes('data-custom-tag-font')) {
+                    return match;
+                }
                 hasChanges = true;
                 // 줄바꿈을 <br>로 변환하여 유지
                 const contentWithBreaks = content.replace(/\n/g, '<br>');
@@ -283,14 +293,14 @@ function applyCustomTagFonts(forceRefresh = false) {
         
         // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
         if (hasChanges) {
-            // 나머지 줄바꿈도 <br>로 변환
-            processedContent = processedContent.replace(/\n/g, '<br>');
             messageContent.innerHTML = processedContent;
             messageContent.setAttribute('data-tag-processed', 'true');
+            messageContent.setAttribute('data-tag-processed-hash', currentContentHash);
             processedMessages.add(messageElement);
         } else {
             // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
             messageContent.setAttribute('data-tag-processed', 'true');
+            messageContent.setAttribute('data-tag-processed-hash', currentContentHash);
             processedMessages.add(messageElement);
         }
     });
