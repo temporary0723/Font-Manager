@@ -744,10 +744,12 @@ function renderCustomTagList(template) {
         let listHtml = '';
         customTags.forEach(tag => {
             const fontName = tag.fontName || '기본 폰트';
+            // 태그 이름을 대문자로 표시
+            const tagNameUpper = (tag.tagName || '').toUpperCase();
             listHtml += `
                 <div class="custom-tag-item">
                     <div class="custom-tag-info">
-                        <span class="custom-tag-name">&lt;${tag.tagName}&gt;</span>
+                        <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
                         <span class="custom-tag-arrow">→</span>
                         <span class="custom-tag-font">${fontName}</span>
                     </div>
@@ -1787,18 +1789,20 @@ function setupEventListeners(template) {
             return;
         }
         
-        // 중복 검사 (대소문자 구분 없음)
+        // 태그 이름을 대문자로 변환
+        const tagNameUpper = tagName.toUpperCase();
+        
+        // 중복 검사 (대문자로 변환하여 비교)
         const existingTags = currentPreset.customTags || [];
-        const tagNameLower = tagName.toLowerCase();
-        if (existingTags.some(tag => tag.tagName.toLowerCase() === tagNameLower)) {
+        if (existingTags.some(tag => tag.tagName.toUpperCase() === tagNameUpper)) {
             alert('이미 등록된 태그입니다.');
             return;
         }
         
-        // 새 태그 추가
+        // 새 태그 추가 (대문자로 저장)
         const newTag = {
             id: generateId(),
-            tagName: tagName,
+            tagName: tagNameUpper,
             fontName: fontName
         };
         
