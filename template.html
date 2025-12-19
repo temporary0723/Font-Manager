@@ -112,6 +112,32 @@
         </div>
     </div>
     
+    <!-- 태그 커스텀 섹션 -->
+    <div class="tag-custom-section" id="tag-custom-section">
+        <h3>태그 커스텀</h3>
+        <div class="tag-custom-guide">
+            <p>태그를 사용하여 특정 텍스트에만 폰트를 적용할 수 있습니다.</p>
+            <p>예: <code>&lt;MEMO&gt;이 텍스트는 MEMO 폰트로 표시됩니다&lt;/MEMO&gt;</code></p>
+        </div>
+        <div class="tag-add-form">
+            <div class="tag-inputs-row">
+                <input type="text" id="tag-name-input" class="tag-name-input" placeholder="태그 이름 (예: MEMO)" maxlength="50">
+                <select id="tag-font-dropdown" class="tag-font-dropdown">
+                    <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                </select>
+            </div>
+            <div class="tag-button-container">
+                <button id="add-tag-btn" class="tag-add-button" title="태그 추가">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>태그 추가</span>
+                </button>
+            </div>
+        </div>
+        <div class="tag-list" id="tag-list">
+            <!-- 추가된 태그들이 여기에 표시됩니다 -->
+        </div>
+    </div>
+    
     <!-- 다국어 폰트 섹션 -->
     <div class="multi-language-font-section" id="multi-language-font-section">
         <h3>다국어 폰트 설정</h3>
