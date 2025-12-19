@@ -22,8 +22,7 @@ const defaultSettings = {
         english: null,
         korean: null,
         japanese: null,
-        chinese: null,
-        punctuation: null
+        chinese: null
     },
     // UI 폰트 조절 값들
     uiFontSize: 14,
@@ -119,13 +118,8 @@ function initSettings() {
         english: null,
         korean: null,
         japanese: null,
-        chinese: null,
-        punctuation: null
+        chinese: null
     };
-    // 기존 설정에 punctuation이 없으면 추가
-    if (!settings.languageFonts.hasOwnProperty('punctuation')) {
-        settings.languageFonts.punctuation = null;
-    }
     // 조절값 기본값 보장
     settings.uiFontSize = settings.uiFontSize ?? 14;
     settings.uiFontWeight = settings.uiFontWeight ?? 0;
@@ -622,13 +616,6 @@ async function openFontManagementPopup() {
             tempMessageFont = currentPreset.messageFont ?? settings.currentMessageFont;
             tempMultiLanguageEnabled = currentPreset.multiLanguageEnabled ?? settings.multiLanguageEnabled;
             tempLanguageFonts = currentPreset.languageFonts ? { ...currentPreset.languageFonts } : { ...settings.languageFonts };
-            // 기존 프리셋에 punctuation이 없으면 추가
-            if (currentPreset.languageFonts && !currentPreset.languageFonts.hasOwnProperty('punctuation')) {
-                if (!tempLanguageFonts) {
-                    tempLanguageFonts = { ...currentPreset.languageFonts };
-                }
-                tempLanguageFonts.punctuation = null;
-            }
             tempUiFontSize = currentPreset.uiFontSize ?? settings.uiFontSize;
             tempUiFontWeight = currentPreset.uiFontWeight ?? settings.uiFontWeight;
             tempChatFontSize = currentPreset.chatFontSize ?? settings.chatFontSize;
@@ -823,13 +810,12 @@ function renderMultiLanguageFontSection(template) {
     template.find('#multi-language-enabled-toggle').prop('checked', multiLangEnabled);
     
     // 언어별 폰트 드롭다운 설정
-    const languages = ['english', 'korean', 'japanese', 'chinese', 'punctuation'];
+    const languages = ['english', 'korean', 'japanese', 'chinese'];
     const languageNames = {
         english: '영어',
         korean: '한국어',
         japanese: '일본어',
-        chinese: '중국어',
-        punctuation: '문장부호'
+        chinese: '중국어'
     };
     
     languages.forEach(lang => {
@@ -1416,8 +1402,7 @@ html body textarea:not(#send_textarea) {
             english: ['U+0020-007F', 'U+00A0-00FF', 'U+0100-017F', 'U+1E00-1EFF'],
             korean: ['U+1100-11FF', 'U+3130-318F', 'U+AC00-D7AF', 'U+A960-A97F'],
             japanese: ['U+3040-309F', 'U+30A0-30FF', 'U+31F0-31FF', 'U+FF65-FF9F'],
-            chinese: ['U+4E00-9FFF', 'U+3400-4DBF', 'U+2F00-2FDF', 'U+F900-FAFF'],
-            punctuation: ['U+0020-002F', 'U+003A-0040', 'U+005B-0060', 'U+007B-007E', 'U+2000-206F', 'U+2E00-2E7F', 'U+3000-303F']
+            chinese: ['U+4E00-9FFF', 'U+3400-4DBF', 'U+2F00-2FDF', 'U+F900-FAFF']
         };
         
         // 각 언어별 @font-face 정의 생성
@@ -1748,13 +1733,6 @@ function setupEventListeners(template) {
             // 다국어 설정 적용
             tempMultiLanguageEnabled = currentPreset?.multiLanguageEnabled ?? settings.multiLanguageEnabled;
             tempLanguageFonts = currentPreset?.languageFonts ? { ...currentPreset.languageFonts } : { ...settings.languageFonts };
-            // 기존 프리셋에 punctuation이 없으면 추가
-            if (currentPreset?.languageFonts && !currentPreset.languageFonts.hasOwnProperty('punctuation')) {
-                if (!tempLanguageFonts) {
-                    tempLanguageFonts = { ...currentPreset.languageFonts };
-                }
-                tempLanguageFonts.punctuation = null;
-            }
             
             // 조절값들을 임시 값으로만 적용
             tempUiFontSize = currentPreset?.uiFontSize ?? settings.uiFontSize;
@@ -1819,20 +1797,6 @@ function setupEventListeners(template) {
                 name: presetName,
                 uiFont: null,
                 messageFont: null,
-                multiLanguageEnabled: false,
-                languageFonts: {
-                    english: null,
-                    korean: null,
-                    japanese: null,
-                    chinese: null,
-                    punctuation: null
-                },
-                uiFontSize: 14,
-                uiFontWeight: 0,
-                chatFontSize: 14,
-                inputFontSize: 14,
-                chatFontWeight: 0,
-                chatLineHeight: 1.2,
                 customTags: []
             };
             
@@ -1889,7 +1853,7 @@ function setupEventListeners(template) {
     });
     
     // 언어별 폰트 드롭다운 변경 이벤트
-    const languages = ['english', 'korean', 'japanese', 'chinese', 'punctuation'];
+    const languages = ['english', 'korean', 'japanese', 'chinese'];
     languages.forEach(lang => {
         template.find(`#${lang}-font-dropdown`).off('change').on('change', function() {
             const fontName = $(this).val();
@@ -2495,13 +2459,8 @@ function applyPresetById(presetId) {
             english: null,
             korean: null,
             japanese: null,
-            chinese: null,
-            punctuation: null
+            chinese: null
         };
-        // 기존 프리셋에 punctuation이 없으면 추가
-        if (preset.languageFonts && !preset.languageFonts.hasOwnProperty('punctuation')) {
-            settings.languageFonts.punctuation = null;
-        }
         settings.uiFontSize = preset.uiFontSize ?? 14;
         settings.uiFontWeight = preset.uiFontWeight ?? 0;
         settings.chatFontSize = preset.chatFontSize ?? 14;
@@ -2521,13 +2480,6 @@ function applyPresetById(presetId) {
     tempMessageFont = preset.messageFont || null;
     tempMultiLanguageEnabled = preset.multiLanguageEnabled ?? settings.multiLanguageEnabled;
     tempLanguageFonts = preset.languageFonts ? { ...preset.languageFonts } : { ...settings.languageFonts };
-    // 기존 프리셋에 punctuation이 없으면 추가
-    if (preset.languageFonts && !preset.languageFonts.hasOwnProperty('punctuation')) {
-        if (!tempLanguageFonts) {
-            tempLanguageFonts = { ...preset.languageFonts };
-        }
-        tempLanguageFonts.punctuation = null;
-    }
     tempUiFontSize = preset.uiFontSize ?? settings.uiFontSize;
     tempUiFontWeight = preset.uiFontWeight ?? settings.uiFontWeight;
     tempChatFontSize = preset.chatFontSize ?? settings.chatFontSize;
