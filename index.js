@@ -234,23 +234,19 @@ function applyCustomTagFonts() {
             const escapedTagName = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const tagRegex = new RegExp(`<${escapedTagName}>([\\s\\S]*?)</${escapedTagName}>`, 'gi');
             
-            // 이미 처리된 태그인지 확인하는 정규식
-            const processedRegex = new RegExp(`<span[^>]*data-custom-tag-font[^>]*>([\\s\\S]*?)</span>`, 'gi');
-            
             processedContent = processedContent.replace(tagRegex, (match, content) => {
-                // 이미 처리된 태그인지 확인
-                if (processedRegex.test(match)) {
-                    return match; // 이미 처리됨
-                }
-                
                 hasChanges = true;
+                // 줄바꿈을 <br>로 변환하여 유지
+                const contentWithBreaks = content.replace(/\n/g, '<br>');
                 // 태그 내용을 span으로 감싸서 폰트 적용
-                return `<span data-custom-tag-font="${actualFontFamily}" style="font-family: '${actualFontFamily}', sans-serif !important;">${content}</span>`;
+                return `<span data-custom-tag-font="${actualFontFamily}" style="font-family: '${actualFontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
             });
         });
         
         // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
         if (hasChanges) {
+            // 나머지 줄바꿈도 <br>로 변환
+            processedContent = processedContent.replace(/\n/g, '<br>');
             messageContent.innerHTML = processedContent;
         }
     });
