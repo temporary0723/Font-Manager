@@ -975,20 +975,28 @@ function validateFontCSS(css) {
 
 // UI 폰트 업데이트
 function updateUIFont() {
+    console.log('[Font Manager] updateUIFont 시작:', {
+        enabled: settings.enabled,
+        customTagsCount: settings?.customTags ? settings.customTags.length : 0
+    });
+    
     // 기존 스타일 완전히 제거
     if (fontStyle) {
         fontStyle.remove();
         fontStyle = null;
+        console.log('[Font Manager] 기존 스타일 제거 완료');
     }
     
     // 새 스타일 엘리먼트 생성
     fontStyle = document.createElement('style');
     fontStyle.id = 'font-manager--ui-fonts';
     document.head.appendChild(fontStyle);
+    console.log('[Font Manager] 새 스타일 엘리먼트 생성 완료');
     
     // 폰트 매니저가 비활성화되어 있으면 스타일을 비움
     if (!settings.enabled) {
         fontStyle.innerHTML = '';
+        console.log('[Font Manager] 폰트 매니저 비활성화됨 - 스타일 비움');
         return;
     }
     
@@ -1243,23 +1251,64 @@ ${languageFontCss.join('')}
     
     // 태그 커스텀 CSS 추가
     const customTags = settings?.customTags || [];
+    console.log('[Font Manager] 태그 커스텀 CSS 생성 시작:', {
+        customTagsCount: customTags.length,
+        customTags: customTags,
+        fontsCount: fonts.length
+    });
+    
     if (customTags.length > 0) {
         const tagCss = [];
         customTags.forEach(tag => {
+            console.log('[Font Manager] 태그 처리 중:', {
+                tagName: tag.name,
+                fontName: tag.fontName,
+                tagId: tag.id
+            });
+            
             if (tag.name && tag.fontName) {
                 const selectedFont = fonts.find(f => f.name === tag.fontName);
+                console.log('[Font Manager] 폰트 찾기 결과:', {
+                    tagName: tag.name,
+                    fontName: tag.fontName,
+                    found: !!selectedFont,
+                    selectedFont: selectedFont ? {
+                        name: selectedFont.name,
+                        fontFamily: selectedFont.fontFamily,
+                        id: selectedFont.id
+                    } : null
+                });
+                
                 if (selectedFont) {
                     const actualFontFamily = selectedFont.fontFamily || tag.fontName;
                     const tagName = tag.name.toUpperCase();
                     
                     // 태그로 변환된 span 요소에 폰트 적용
-                    tagCss.push(`
+                    const cssRule = `
 /* 태그 커스텀: ${tag.name} */
 .mes_text .font-manager-tag-${tagName.toLowerCase()} {
   font-family: "${actualFontFamily}", sans-serif !important;
 }
-                    `);
+                    `;
+                    tagCss.push(cssRule);
+                    
+                    console.log('[Font Manager] 태그 CSS 생성 완료:', {
+                        tagName: tag.name,
+                        cssClass: `font-manager-tag-${tagName.toLowerCase()}`,
+                        fontFamily: actualFontFamily
+                    });
+                } else {
+                    console.warn('[Font Manager] 태그에 대한 폰트를 찾을 수 없음:', {
+                        tagName: tag.name,
+                        fontName: tag.fontName
+                    });
                 }
+            } else {
+                console.warn('[Font Manager] 태그 정보가 불완전함:', {
+                    tag: tag,
+                    hasName: !!tag.name,
+                    hasFontName: !!tag.fontName
+                });
             }
         });
         
@@ -1268,7 +1317,15 @@ ${languageFontCss.join('')}
 /* === CUSTOM TAG FONTS === */
 ${tagCss.join('\n')}
             `);
+            console.log('[Font Manager] 태그 CSS 추가 완료:', {
+                generatedCssCount: tagCss.length,
+                totalCustomTags: customTags.length
+            });
+        } else {
+            console.warn('[Font Manager] 생성된 태그 CSS가 없음');
         }
+    } else {
+        console.log('[Font Manager] 커스텀 태그가 없음');
     }
     
     const finalCss = [
@@ -1290,6 +1347,27 @@ ${tagCss.join('\n')}
     
     const sanitizedCss = sanitize(finalCss);
     fontStyle.innerHTML = sanitizedCss;
+    
+    console.log('[Font Manager] updateUIFont 완료:', {
+        cssLength: sanitizedCss.length,
+        hasTagCss: sanitizedCss.includes('CUSTOM TAG FONTS'),
+        customTagsCount: settings?.customTags ? settings.customTags.length : 0
+    });
+    
+    // CSS에 태그 관련 스타일이 포함되어 있는지 확인
+    if (settings?.customTags && settings.customTags.length > 0) {
+        const tagCssIncluded = settings.customTags.some(tag => {
+            const className = `font-manager-tag-${tag.name.toLowerCase()}`;
+            return sanitizedCss.includes(className);
+        });
+        console.log('[Font Manager] 태그 CSS 포함 여부:', {
+            tagCssIncluded: tagCssIncluded,
+            customTags: settings.customTags.map(t => ({
+                name: t.name,
+                className: `font-manager-tag-${t.name.toLowerCase()}`
+            }))
+        });
+    }
 }
 
 // 현재 프리셋의 UI 폰트 가져오기
@@ -1747,10 +1825,20 @@ function setupEventListeners(template) {
             fontName: fontName || null
         };
         
+        console.log('[Font Manager] 새 태그 추가:', {
+            tag: newTag,
+            existingTagsCount: settings.customTags ? settings.customTags.length : 0
+        });
+        
         if (!settings.customTags) {
             settings.customTags = [];
         }
         settings.customTags.push(newTag);
+        
+        console.log('[Font Manager] 태그 추가 완료:', {
+            totalTags: settings.customTags.length,
+            newTag: newTag
+        });
         
         // UI 초기화 및 업데이트
         template.find('#tag-name-input').val('');
@@ -1759,7 +1847,10 @@ function setupEventListeners(template) {
         setupTagEventListeners(template);
         
         saveSettings();
+        console.log('[Font Manager] 태그 추가 후 updateUIFont 호출');
         updateUIFont(); // 폰트 즉시 적용
+        console.log('[Font Manager] 태그 추가 후 processMessageTags 호출');
+        processMessageTags(); // 기존 메시지도 즉시 처리
         alert('태그가 추가되었습니다.');
     });
     
@@ -1853,20 +1944,46 @@ function setupTagEventListeners(template) {
 
 // 태그 삭제
 function deleteTag(template, tagId) {
-    if (!settings?.customTags) return;
+    console.log('[Font Manager] 태그 삭제 시작:', {
+        tagId: tagId,
+        customTagsCount: settings?.customTags ? settings.customTags.length : 0
+    });
+    
+    if (!settings?.customTags) {
+        console.warn('[Font Manager] customTags가 없음');
+        return;
+    }
     
     const customTags = settings.customTags;
     const tagIndex = customTags.findIndex(tag => tag.id === tagId);
     
     if (tagIndex !== -1) {
+        const deletedTag = customTags[tagIndex];
+        console.log('[Font Manager] 삭제할 태그 찾음:', {
+            tagIndex: tagIndex,
+            deletedTag: deletedTag
+        });
+        
         customTags.splice(tagIndex, 1);
+        
+        console.log('[Font Manager] 태그 삭제 완료:', {
+            remainingTags: customTags.length,
+            deletedTag: deletedTag
+        });
         
         // UI 업데이트
         renderTagList(template);
         setupTagEventListeners(template);
         
         saveSettings();
+        console.log('[Font Manager] 태그 삭제 후 updateUIFont 호출');
         updateUIFont(); // 폰트 즉시 업데이트
+        console.log('[Font Manager] 태그 삭제 후 processMessageTags 호출');
+        processMessageTags(); // 기존 메시지도 즉시 처리
+    } else {
+        console.warn('[Font Manager] 삭제할 태그를 찾을 수 없음:', {
+            tagId: tagId
+        });
     }
 }
 
@@ -2815,24 +2932,66 @@ function resetSettings(template) {
 // 메시지 텍스트 내 태그를 HTML 태그로 변환
 function processMessageTags() {
     const customTags = settings?.customTags || [];
-    if (customTags.length === 0) return;
+    console.log('[Font Manager] processMessageTags 시작:', {
+        customTagsCount: customTags.length,
+        customTags: customTags.map(t => ({ name: t.name, fontName: t.fontName }))
+    });
+    
+    if (customTags.length === 0) {
+        console.log('[Font Manager] 커스텀 태그가 없어서 처리 중단');
+        return;
+    }
+    
+    const mesTextElements = $('.mes_text');
+    console.log('[Font Manager] 찾은 .mes_text 요소 수:', mesTextElements.length);
+    
+    let totalProcessed = 0;
+    let totalModified = 0;
     
     // .mes_text 요소들을 찾아서 태그 처리
-    $('.mes_text').each(function() {
+    mesTextElements.each(function(index) {
         let $mesText = $(this);
         let html = $mesText.html();
+        let originalHtml = html;
         let modified = false;
+        let tagMatches = [];
+        
+        totalProcessed++;
         
         customTags.forEach(tag => {
             if (tag.name && tag.fontName) {
                 const tagName = tag.name.toUpperCase();
                 const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'gi');
+                const matches = html.match(regex);
                 
-                if (regex.test(html)) {
+                if (matches && matches.length > 0) {
+                    console.log('[Font Manager] 태그 매칭 발견:', {
+                        elementIndex: index,
+                        tagName: tag.name,
+                        matches: matches,
+                        matchCount: matches.length
+                    });
+                    
                     html = html.replace(regex, (match, content) => {
                         const selectedFont = settings.fonts.find(f => f.name === tag.fontName);
                         const actualFontFamily = selectedFont ? (selectedFont.fontFamily || tag.fontName) : tag.fontName;
-                        return `<span class="font-manager-tag-${tagName.toLowerCase()}" style="font-family: '${actualFontFamily}', sans-serif !important;">${content}</span>`;
+                        const className = `font-manager-tag-${tagName.toLowerCase()}`;
+                        const replacement = `<span class="${className}" style="font-family: '${actualFontFamily}', sans-serif !important;">${content}</span>`;
+                        
+                        console.log('[Font Manager] 태그 변환:', {
+                            original: match,
+                            replacement: replacement,
+                            className: className,
+                            fontFamily: actualFontFamily
+                        });
+                        
+                        tagMatches.push({
+                            tagName: tag.name,
+                            original: match,
+                            replacement: replacement
+                        });
+                        
+                        return replacement;
                     });
                     modified = true;
                 }
@@ -2841,37 +3000,78 @@ function processMessageTags() {
         
         if (modified) {
             $mesText.html(html);
+            totalModified++;
+            console.log('[Font Manager] 메시지 태그 변환 완료:', {
+                elementIndex: index,
+                originalLength: originalHtml.length,
+                newLength: html.length,
+                tagMatches: tagMatches.length,
+                tagDetails: tagMatches
+            });
         }
+    });
+    
+    console.log('[Font Manager] processMessageTags 완료:', {
+        totalProcessed: totalProcessed,
+        totalModified: totalModified,
+        customTagsCount: customTags.length
     });
 }
 
 // 메시지 태그 처리 시작
 function startMessageTagProcessing() {
+    console.log('[Font Manager] startMessageTagProcessing 시작');
+    
     // 기존 메시지 처리
+    console.log('[Font Manager] 기존 메시지 태그 처리 시작');
     processMessageTags();
     
     // 새로운 메시지가 추가될 때마다 처리
     const observer = new MutationObserver(function(mutations) {
+        let hasNewMessages = false;
+        
         mutations.forEach(function(mutation) {
             if (mutation.addedNodes.length > 0) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1) { // Element node
-                        if ($(node).hasClass('mes_text') || $(node).find('.mes_text').length > 0) {
-                            setTimeout(processMessageTags, 100);
+                        const $node = $(node);
+                        if ($node.hasClass('mes_text') || $node.find('.mes_text').length > 0) {
+                            hasNewMessages = true;
+                            console.log('[Font Manager] 새 메시지 감지:', {
+                                nodeType: node.nodeName,
+                                hasMesText: $node.hasClass('mes_text'),
+                                foundMesText: $node.find('.mes_text').length
+                            });
                         }
                     }
                 });
             }
         });
+        
+        if (hasNewMessages) {
+            console.log('[Font Manager] 새 메시지 태그 처리 예약 (100ms 후)');
+            setTimeout(() => {
+                console.log('[Font Manager] 새 메시지 태그 처리 시작');
+                processMessageTags();
+            }, 100);
+        }
     });
     
     // 채팅 영역 감시
     const chatArea = document.querySelector('#chat') || document.querySelector('.chat-container') || document.body;
+    console.log('[Font Manager] 채팅 영역 감시 시작:', {
+        chatArea: chatArea ? chatArea.tagName + (chatArea.id ? '#' + chatArea.id : '') + (chatArea.className ? '.' + chatArea.className : '') : 'null',
+        found: !!chatArea
+    });
+    
     if (chatArea) {
         observer.observe(chatArea, {
             childList: true,
             subtree: true
         });
+        console.log('[Font Manager] MutationObserver 설정 완료');
+    } else {
+        console.warn('[Font Manager] 채팅 영역을 찾을 수 없음');
     }
 }
 
