@@ -2961,40 +2961,64 @@ function processMessageTags() {
         customTags.forEach(tag => {
             if (tag.name && tag.fontName) {
                 const tagName = tag.name.toUpperCase();
-                const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'gi');
-                const matches = html.match(regex);
+                const tagNameLower = tag.name.toLowerCase();
                 
-                if (matches && matches.length > 0) {
-                    console.log('[Font Manager] 태그 매칭 발견:', {
-                        elementIndex: index,
-                        tagName: tag.name,
-                        matches: matches,
-                        matchCount: matches.length
-                    });
-                    
-                    html = html.replace(regex, (match, content) => {
-                        const selectedFont = settings.fonts.find(f => f.name === tag.fontName);
-                        const actualFontFamily = selectedFont ? (selectedFont.fontFamily || tag.fontName) : tag.fontName;
-                        const className = `font-manager-tag-${tagName.toLowerCase()}`;
-                        const replacement = `<span class="${className}" style="font-family: '${actualFontFamily}', sans-serif !important;">${content}</span>`;
-                        
-                        console.log('[Font Manager] 태그 변환:', {
-                            original: match,
-                            replacement: replacement,
-                            className: className,
-                            fontFamily: actualFontFamily
-                        });
-                        
-                        tagMatches.push({
+                // 여러 패턴 시도:
+                // 1. 일반 태그: <LETTER>...</LETTER>
+                // 2. 소문자 태그: <letter>...</letter>
+                // 3. HTML 엔티티: &lt;LETTER&gt;...&lt;/LETTER&gt;
+                // 4. 혼합: <LETTER>...&lt;/LETTER&gt; 등
+                
+                const patterns = [
+                    new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi'),
+                    new RegExp(`<${tagNameLower}>([\\s\\S]*?)</${tagNameLower}>`, 'gi'),
+                    new RegExp(`&lt;${tagName}&gt;([\\s\\S]*?)&lt;/${tagName}&gt;`, 'gi'),
+                    new RegExp(`&lt;${tagNameLower}&gt;([\\s\\S]*?)&lt;/${tagNameLower}&gt;`, 'gi')
+                ];
+                
+                patterns.forEach((regex, patternIndex) => {
+                    const matches = html.match(regex);
+                    if (matches && matches.length > 0) {
+                        console.log('[Font Manager] 태그 매칭 발견:', {
+                            elementIndex: index,
                             tagName: tag.name,
-                            original: match,
-                            replacement: replacement
+                            patternIndex: patternIndex,
+                            matches: matches.slice(0, 3), // 처음 3개만 로그
+                            matchCount: matches.length,
+                            htmlSample: html.substring(0, 300)
                         });
                         
-                        return replacement;
-                    });
-                    modified = true;
-                }
+                        html = html.replace(regex, (match, content) => {
+                            // content에서 HTML 엔티티 디코딩
+                            let decodedContent = content;
+                            if (patternIndex >= 2) { // HTML 엔티티 패턴인 경우
+                                decodedContent = content.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                            }
+                            
+                            const selectedFont = settings.fonts.find(f => f.name === tag.fontName);
+                            const actualFontFamily = selectedFont ? (selectedFont.fontFamily || tag.fontName) : tag.fontName;
+                            const className = `font-manager-tag-${tagNameLower}`;
+                            const replacement = `<span class="${className}" style="font-family: '${actualFontFamily}', sans-serif !important;">${decodedContent}</span>`;
+                            
+                            console.log('[Font Manager] 태그 변환:', {
+                                original: match.substring(0, 100),
+                                replacement: replacement.substring(0, 100) + '...',
+                                className: className,
+                                fontFamily: actualFontFamily,
+                                contentLength: decodedContent.length
+                            });
+                            
+                            tagMatches.push({
+                                tagName: tag.name,
+                                original: match.substring(0, 50),
+                                replacement: replacement.substring(0, 50)
+                            });
+                            
+                            return replacement;
+                        });
+                        modified = true;
+                    }
+                });
             }
         });
         
@@ -3006,8 +3030,31 @@ function processMessageTags() {
                 originalLength: originalHtml.length,
                 newLength: html.length,
                 tagMatches: tagMatches.length,
-                tagDetails: tagMatches
+                tagDetails: tagMatches.slice(0, 3) // 처음 3개만 로그
             });
+        } else {
+            // 디버깅: 변환되지 않은 경우 HTML 내용 확인
+            if (originalHtml.length > 0) {
+                // 태그 이름이 HTML에 포함되어 있는지 확인
+                const hasAnyTag = customTags.some(tag => {
+                    const tagName = tag.name.toUpperCase();
+                    const tagNameLower = tag.name.toLowerCase();
+                    return originalHtml.includes(`<${tagName}>`) || 
+                           originalHtml.includes(`<${tagNameLower}>`) ||
+                           originalHtml.includes(`&lt;${tagName}&gt;`) ||
+                           originalHtml.includes(`&lt;${tagNameLower}&gt;`);
+                });
+                
+                if (hasAnyTag) {
+                    console.log('[Font Manager] 메시지 변환되지 않음 (태그는 발견됨):', {
+                        elementIndex: index,
+                        htmlLength: originalHtml.length,
+                        htmlSample: originalHtml.substring(0, 500),
+                        containsAngleBrackets: originalHtml.includes('<') || originalHtml.includes('>'),
+                        containsEntity: originalHtml.includes('&lt;') || originalHtml.includes('&gt;')
+                    });
+                }
+            }
         }
     });
     
