@@ -599,6 +599,59 @@ function renderMessageFontSection(template) {
     template.find('#chat-line-height-value').text(chatLineHeight.toFixed(1) + 'rem');
 }
 
+// 태그 커스텀 섹션 렌더링
+function renderTagCustomSection(template) {
+    const fonts = settings?.fonts || [];
+    const tagCustomRules = settings?.tagCustomRules || [];
+    const dropdown = template.find('#tag-font-dropdown');
+    
+    // 폰트 드롭다운 옵션 생성
+    dropdown.empty();
+    dropdown.append('<option value="">기본 폰트</option>');
+    
+    fonts.forEach(font => {
+        dropdown.append(`<option value="${font.name}">${font.name}</option>`);
+    });
+    
+    // 태그 리스트 렌더링
+    renderTagList(template);
+}
+
+// 태그 리스트 렌더링
+function renderTagList(template) {
+    const tagCustomRules = settings?.tagCustomRules || [];
+    const listArea = template.find('#tag-list');
+    const fonts = settings?.fonts || [];
+    
+    if (tagCustomRules.length === 0) {
+        listArea.html(`
+            <div class="no-tag-rules-message">
+                <p>추가된 태그가 없습니다</p>
+            </div>
+        `);
+    } else {
+        let tagsHtml = '';
+        tagCustomRules.forEach(rule => {
+            const font = fonts.find(f => f.name === rule.fontName);
+            const fontDisplayName = font ? font.name : (rule.fontName || '기본 폰트');
+            
+            tagsHtml += `
+                <div class="tag-rule-item">
+                    <div class="tag-rule-info">
+                        <span class="tag-rule-tag">&lt;${rule.tagName}&gt;</span>
+                        <span class="tag-rule-arrow">→</span>
+                        <span class="tag-rule-font">${fontDisplayName}</span>
+                    </div>
+                    <button class="remove-tag-rule-btn" data-id="${rule.id}" title="태그 삭제">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        listArea.html(tagsHtml);
+    }
+}
+
 // 테마 연동 섹션 렌더링
 function renderThemeLinkingSection(template) {
     const presets = settings?.presets || [];
