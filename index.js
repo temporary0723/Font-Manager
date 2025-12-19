@@ -2930,29 +2930,76 @@ function processMessageTags() {
                 const tagNameLower = tag.name.toLowerCase();
                 console.log(`[Font Manager - Tag Custom] 태그 ${tagIndex + 1} 처리: ${tagName} -> ${tag.fontName}`);
                 
-                // 대소문자 구분 없이 태그 찾기
-                const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi');
+                // HTML 엔티티로 변환된 태그도 찾기 위해 두 가지 패턴 사용
+                // 1. 일반 태그: <memo>...</memo>
+                // 2. HTML 엔티티: &lt;memo&gt;...&lt;/memo&gt;
+                const regex1 = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi');
+                const regex2 = new RegExp(`&lt;${tagName}&gt;([\\s\\S]*?)&lt;/${tagName}&gt;`, 'gi');
                 
                 // 태그가 있는지 확인 (이미 span으로 변환된 것은 제외)
-                const testMatch = element.innerHTML.match(regex);
+                const testMatch1 = element.innerHTML.match(regex1);
+                const testMatch2 = element.innerHTML.match(regex2);
                 const existingSpan = element.querySelector(`.font-tag-${tagNameLower}`);
                 
-                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 매칭 결과:`, testMatch ? `${testMatch.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 일반 패턴 매칭:`, testMatch1 ? `${testMatch1.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 엔티티 패턴 매칭:`, testMatch2 ? `${testMatch2.length}개 발견` : '없음');
                 console.log(`[Font Manager - Tag Custom] 이미 변환된 span 존재:`, existingSpan !== null);
                 
-                if (testMatch && !existingSpan) {
+                // HTML 샘플 출력 (디버깅용) - 태그 이름이 포함되어 있는지 확인
+                const htmlContent = element.innerHTML;
+                const tagNameLowerInHtml = htmlContent.toLowerCase();
+                const hasTagName = tagNameLowerInHtml.includes(tagName.toLowerCase());
+                const hasEntityTag = htmlContent.includes(`&lt;${tagName.toLowerCase()}&gt;`) || 
+                                   htmlContent.includes(`&lt;${tagName.toUpperCase()}&gt;`);
+                
+                if (hasTagName || hasEntityTag) {
+                    const tagIndex = tagNameLowerInHtml.indexOf(tagName.toLowerCase());
+                    if (tagIndex !== -1) {
+                        const sampleStart = Math.max(0, tagIndex - 100);
+                        const sample = htmlContent.substring(sampleStart, Math.min(htmlContent.length, sampleStart + 300));
+                        console.log(`[Font Manager - Tag Custom] HTML 샘플 (태그 이름 주변 300자):`, sample);
+                    }
+                } else {
+                    // 태그 이름이 없으면 HTML 일부만 출력
+                    const sample = htmlContent.substring(0, Math.min(500, htmlContent.length));
+                    console.log(`[Font Manager - Tag Custom] HTML 샘플 (처음 500자, 태그 이름 없음):`, sample);
+                }
+                
+                if ((testMatch1 || testMatch2) && !existingSpan) {
                     console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 변환 시작`);
-                    // 태그를 span으로 감싸기
-                    element.innerHTML = element.innerHTML.replace(
-                        regex,
-                        (match, content) => {
-                            hasChanges = true;
-                            console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 변환: "${content}"`);
-                            return `<span class="font-tag-${tagNameLower}" data-tag="${tagNameLower}">${content}</span>`;
-                        }
-                    );
-                } else if (testMatch && existingSpan) {
+                    
+                    // 일반 태그 변환
+                    if (testMatch1) {
+                        element.innerHTML = element.innerHTML.replace(
+                            regex1,
+                            (match, content) => {
+                                hasChanges = true;
+                                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 일반 변환: "${content.substring(0, 50)}"`);
+                                return `<span class="font-tag-${tagNameLower}" data-tag="${tagNameLower}">${content}</span>`;
+                            }
+                        );
+                    }
+                    
+                    // HTML 엔티티 태그 변환
+                    if (testMatch2) {
+                        element.innerHTML = element.innerHTML.replace(
+                            regex2,
+                            (match, content) => {
+                                hasChanges = true;
+                                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 엔티티 변환: "${content.substring(0, 50)}"`);
+                                return `<span class="font-tag-${tagNameLower}" data-tag="${tagNameLower}">${content}</span>`;
+                            }
+                        );
+                    }
+                } else if ((testMatch1 || testMatch2) && existingSpan) {
                     console.log(`[Font Manager - Tag Custom] 태그 ${tagName}는 이미 변환됨`);
+                } else {
+                    // 태그가 없는 경우 HTML 내용 일부 확인
+                    const htmlContent = element.innerHTML;
+                    const hasTagName = htmlContent.includes(tagName);
+                    const hasEntityTag = htmlContent.includes(`&lt;${tagName}&gt;`) || htmlContent.includes(`&lt;${tagName.toLowerCase()}&gt;`);
+                    console.log(`[Font Manager - Tag Custom] HTML에 태그 이름 "${tagName}" 포함:`, hasTagName);
+                    console.log(`[Font Manager - Tag Custom] HTML에 엔티티 태그 포함:`, hasEntityTag);
                 }
             } else {
                 console.log(`[Font Manager - Tag Custom] 태그 ${tagIndex + 1}는 유효하지 않음 (name: ${tag.name}, fontName: ${tag.fontName})`);
