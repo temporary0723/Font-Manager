@@ -588,6 +588,59 @@ function renderMessageFontSection(template) {
     template.find('#chat-line-height-value').text(chatLineHeight.toFixed(1) + 'rem');
 }
 
+// 태그 커스텀 섹션 렌더링
+function renderTagCustomSection(template) {
+    const fonts = settings?.fonts || [];
+    const customTags = settings?.customTags || [];
+    const dropdown = template.find('#tag-font-dropdown');
+    
+    // 폰트 드롭다운 옵션 생성
+    dropdown.empty();
+    dropdown.append('<option value="">기본 폰트</option>');
+    
+    fonts.forEach(font => {
+        dropdown.append(`<option value="${font.name}">${font.name}</option>`);
+    });
+    
+    // 태그 리스트 렌더링
+    renderTagList(template);
+}
+
+// 태그 리스트 렌더링
+function renderTagList(template) {
+    const customTags = settings?.customTags || [];
+    const fonts = settings?.fonts || [];
+    const listArea = template.find('#tag-list');
+    
+    if (customTags.length === 0) {
+        listArea.html(`
+            <div class="no-tags-message">
+                <p>추가된 태그가 없습니다</p>
+            </div>
+        `);
+    } else {
+        let tagsHtml = '';
+        customTags.forEach(tag => {
+            const font = fonts.find(f => f.name === tag.fontName);
+            const fontDisplayName = font ? font.name : (tag.fontName || '기본 폰트');
+            
+            tagsHtml += `
+                <div class="tag-item">
+                    <div class="tag-info">
+                        <span class="tag-name">&lt;${tag.name}&gt;</span>
+                        <span class="tag-arrow">→</span>
+                        <span class="tag-font">${fontDisplayName}</span>
+                    </div>
+                    <button class="remove-tag-btn" data-id="${tag.id}" title="태그 삭제">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        listArea.html(tagsHtml);
+    }
+}
+
 // 테마 연동 섹션 렌더링
 function renderThemeLinkingSection(template) {
     const presets = settings?.presets || [];
