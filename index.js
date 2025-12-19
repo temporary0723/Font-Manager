@@ -2958,6 +2958,18 @@ function processMessageTags() {
         
         totalProcessed++;
         
+        // 디버깅: 첫 번째 메시지의 HTML 내용 확인
+        if (index === 0) {
+            console.log('[Font Manager] 첫 번째 메시지 HTML 샘플:', {
+                htmlLength: html.length,
+                htmlContent: html.substring(0, 500),
+                textContent: $mesText.text().substring(0, 200),
+                innerHTML: $mesText[0]?.innerHTML?.substring(0, 500),
+                hasAngleBrackets: html.includes('<') || html.includes('>'),
+                hasEntity: html.includes('&lt;') || html.includes('&gt;')
+            });
+        }
+        
         customTags.forEach(tag => {
             if (tag.name && tag.fontName) {
                 const tagName = tag.name.toUpperCase();
@@ -3045,13 +3057,30 @@ function processMessageTags() {
                            originalHtml.includes(`&lt;${tagNameLower}&gt;`);
                 });
                 
-                if (hasAnyTag) {
-                    console.log('[Font Manager] 메시지 변환되지 않음 (태그는 발견됨):', {
+                // 텍스트 내용에서도 확인
+                const textContent = $mesText.text();
+                const hasTagInText = customTags.some(tag => {
+                    const tagName = tag.name.toUpperCase();
+                    const tagNameLower = tag.name.toLowerCase();
+                    return textContent.includes(`<${tagName}>`) || 
+                           textContent.includes(`<${tagNameLower}>`);
+                });
+                
+                if (hasAnyTag || hasTagInText || index < 3) { // 처음 3개 메시지는 항상 로그
+                    console.log('[Font Manager] 메시지 변환되지 않음:', {
                         elementIndex: index,
                         htmlLength: originalHtml.length,
                         htmlSample: originalHtml.substring(0, 500),
+                        textContentSample: textContent.substring(0, 200),
                         containsAngleBrackets: originalHtml.includes('<') || originalHtml.includes('>'),
-                        containsEntity: originalHtml.includes('&lt;') || originalHtml.includes('&gt;')
+                        containsEntity: originalHtml.includes('&lt;') || originalHtml.includes('&gt;'),
+                        hasAnyTag: hasAnyTag,
+                        hasTagInText: hasTagInText,
+                        customTags: customTags.map(t => ({
+                            name: t.name,
+                            htmlHasTag: originalHtml.includes(`<${t.name.toUpperCase()}>`) || originalHtml.includes(`<${t.name.toLowerCase()}>`),
+                            textHasTag: textContent.includes(`<${t.name.toUpperCase()}>`) || textContent.includes(`<${t.name.toLowerCase()}>`)
+                        }))
                     });
                 }
             }
