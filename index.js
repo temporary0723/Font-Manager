@@ -2951,6 +2951,7 @@ function processMessageTags() {
     // .mes_text 요소들을 찾아서 태그 처리
     mesTextElements.each(function(index) {
         let $mesText = $(this);
+        let mesTextElement = this;
         let html = $mesText.html();
         let originalHtml = html;
         let modified = false;
@@ -2958,18 +2959,86 @@ function processMessageTags() {
         
         totalProcessed++;
         
-        // 디버깅: 첫 번째 메시지의 HTML 내용 확인
-        if (index === 0) {
-            console.log('[Font Manager] 첫 번째 메시지 HTML 샘플:', {
-                htmlLength: html.length,
-                htmlContent: html.substring(0, 500),
-                textContent: $mesText.text().substring(0, 200),
-                innerHTML: $mesText[0]?.innerHTML?.substring(0, 500),
-                hasAngleBrackets: html.includes('<') || html.includes('>'),
-                hasEntity: html.includes('&lt;') || html.includes('&gt;')
-            });
+        // 텍스트 노드를 직접 순회하여 태그 처리
+        function processTextNodes(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                let text = node.textContent;
+                let newText = text;
+                let nodeModified = false;
+                
+                customTags.forEach(tag => {
+                    if (tag.name && tag.fontName) {
+                        const tagName = tag.name.toUpperCase();
+                        const tagNameLower = tag.name.toLowerCase();
+                        
+                        // 텍스트 노드에서 태그 찾기
+                        const patterns = [
+                            new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi'),
+                            new RegExp(`<${tagNameLower}>([\\s\\S]*?)</${tagNameLower}>`, 'gi')
+                        ];
+                        
+                        patterns.forEach((regex, patternIndex) => {
+                            if (regex.test(newText)) {
+                                newText = newText.replace(regex, (match, content) => {
+                                    const selectedFont = settings.fonts.find(f => f.name === tag.fontName);
+                                    const actualFontFamily = selectedFont ? (selectedFont.fontFamily || tag.fontName) : tag.fontName;
+                                    const className = `font-manager-tag-${tagNameLower}`;
+                                    
+                                    // 텍스트 노드를 span으로 교체
+                                    const span = document.createElement('span');
+                                    span.className = className;
+                                    span.style.fontFamily = `'${actualFontFamily}', sans-serif`;
+                                    span.style.cssText += ' !important';
+                                    span.textContent = content;
+                                    
+                                    // 텍스트 노드를 span으로 교체
+                                    node.parentNode.insertBefore(span, node);
+                                    
+                                    console.log('[Font Manager] 텍스트 노드에서 태그 발견 및 변환:', {
+                                        elementIndex: index,
+                                        tagName: tag.name,
+                                        original: match.substring(0, 50),
+                                        content: content.substring(0, 50),
+                                        fontFamily: actualFontFamily
+                                    });
+                                    
+                                    tagMatches.push({
+                                        tagName: tag.name,
+                                        original: match.substring(0, 50)
+                                    });
+                                    
+                                    return ''; // 원본 텍스트는 제거 (span으로 교체됨)
+                                });
+                                
+                                // 남은 텍스트가 있으면 업데이트
+                                if (newText !== text) {
+                                    if (newText.trim()) {
+                                        node.textContent = newText;
+                                    } else {
+                                        node.parentNode.removeChild(node);
+                                    }
+                                    nodeModified = true;
+                                    modified = true;
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                return nodeModified;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // 자식 노드들을 재귀적으로 처리
+                const children = Array.from(node.childNodes);
+                children.forEach(child => {
+                    processTextNodes(child);
+                });
+            }
         }
         
+        // 텍스트 노드 처리 시작
+        processTextNodes(mesTextElement);
+        
+        // HTML 기반 처리도 시도 (기존 방식)
         customTags.forEach(tag => {
             if (tag.name && tag.fontName) {
                 const tagName = tag.name.toUpperCase();
@@ -2991,19 +3060,17 @@ function processMessageTags() {
                 patterns.forEach((regex, patternIndex) => {
                     const matches = html.match(regex);
                     if (matches && matches.length > 0) {
-                        console.log('[Font Manager] 태그 매칭 발견:', {
+                        console.log('[Font Manager] HTML에서 태그 매칭 발견:', {
                             elementIndex: index,
                             tagName: tag.name,
                             patternIndex: patternIndex,
-                            matches: matches.slice(0, 3), // 처음 3개만 로그
-                            matchCount: matches.length,
-                            htmlSample: html.substring(0, 300)
+                            matches: matches.slice(0, 3),
+                            matchCount: matches.length
                         });
                         
                         html = html.replace(regex, (match, content) => {
-                            // content에서 HTML 엔티티 디코딩
                             let decodedContent = content;
-                            if (patternIndex >= 2) { // HTML 엔티티 패턴인 경우
+                            if (patternIndex >= 2) {
                                 decodedContent = content.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
                             }
                             
@@ -3011,14 +3078,6 @@ function processMessageTags() {
                             const actualFontFamily = selectedFont ? (selectedFont.fontFamily || tag.fontName) : tag.fontName;
                             const className = `font-manager-tag-${tagNameLower}`;
                             const replacement = `<span class="${className}" style="font-family: '${actualFontFamily}', sans-serif !important;">${decodedContent}</span>`;
-                            
-                            console.log('[Font Manager] 태그 변환:', {
-                                original: match.substring(0, 100),
-                                replacement: replacement.substring(0, 100) + '...',
-                                className: className,
-                                fontFamily: actualFontFamily,
-                                contentLength: decodedContent.length
-                            });
                             
                             tagMatches.push({
                                 tagName: tag.name,
