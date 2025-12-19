@@ -2910,6 +2910,13 @@ function processMessageTags() {
     messageElements.forEach((element, index) => {
         console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1} 처리 시작`);
         console.log(`[Font Manager - Tag Custom] 요소 HTML 길이:`, element.innerHTML.length);
+        console.log(`[Font Manager - Tag Custom] 요소 textContent 길이:`, element.textContent ? element.textContent.length : 0);
+        
+        // 원본 텍스트 확인 (data 속성이나 다른 곳에 저장되어 있을 수 있음)
+        const messageData = element.closest('.mes') || element.parentElement;
+        if (messageData) {
+            console.log(`[Font Manager - Tag Custom] 메시지 컨테이너 찾음:`, messageData.className);
+        }
         
         // 이미 처리된 요소는 건너뛰기 (하지만 새로 추가된 태그가 있을 수 있으므로 재처리)
         const lastProcessedTags = element.dataset.processedTags || '';
@@ -2922,6 +2929,10 @@ function processMessageTags() {
             console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1}는 이미 처리됨, 건너뜀`);
             return;
         }
+        
+        // innerHTML 대신 textContent에서 원본 태그 찾기 시도
+        const textContent = element.textContent || '';
+        console.log(`[Font Manager - Tag Custom] textContent 샘플 (처음 200자):`, textContent.substring(0, 200));
         
         let hasChanges = false;
         customTags.forEach((tag, tagIndex) => {
@@ -2941,12 +2952,75 @@ function processMessageTags() {
                 const testMatch2 = element.innerHTML.match(regex2);
                 const existingSpan = element.querySelector(`.font-tag-${tagNameLower}`);
                 
-                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 일반 패턴 매칭:`, testMatch1 ? `${testMatch1.length}개 발견` : '없음');
-                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 엔티티 패턴 매칭:`, testMatch2 ? `${testMatch2.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 일반 패턴 매칭 (innerHTML):`, testMatch1 ? `${testMatch1.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 엔티티 패턴 매칭 (innerHTML):`, testMatch2 ? `${testMatch2.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 일반 패턴 매칭 (textContent):`, testMatch3 ? `${testMatch3.length}개 발견` : '없음');
                 console.log(`[Font Manager - Tag Custom] 이미 변환된 span 존재:`, existingSpan !== null);
                 
+                // textContent에서 태그 찾기 시도 (HTML이 렌더링되기 전 원본)
+                if (testMatch3 && !existingSpan) {
+                    console.log(`[Font Manager - Tag Custom] textContent에서 태그 ${tagName} 발견! 원본 텍스트 처리 시작`);
+                    
+                    // textContent에서 태그를 찾았지만 innerHTML에는 없음 = HTML 렌더링 시 제거됨
+                    // 이 경우 메시지의 원본 데이터를 찾아야 함
+                    const matches = [...textContent.matchAll(regex3)];
+                    console.log(`[Font Manager - Tag Custom] textContent에서 ${matches.length}개 태그 발견`);
+                    
+                    // textContent에서 태그를 찾았으므로, HTML에서 해당 텍스트를 찾아 span으로 감싸기
+                    // textContent의 텍스트 순서를 유지하면서 HTML 구조를 보존
+                    matches.reverse().forEach((match, matchIndex) => {
+                        const fullMatch = match[0];
+                        const content = match[1];
+                        console.log(`[Font Manager - Tag Custom] 매치 ${matchIndex + 1}: "${fullMatch.substring(0, 50)}..."`);
+                        
+                        // textContent에서 태그를 제거한 순수 텍스트
+                        const plainText = content;
+                        
+                        // HTML에서 해당 텍스트를 찾아 span으로 감싸기
+                        // 정확한 위치를 찾기 위해 텍스트 노드를 순회
+                        const walker = document.createTreeWalker(
+                            element,
+                            NodeFilter.SHOW_TEXT,
+                            null,
+                            false
+                        );
+                        
+                        let node;
+                        while (node = walker.nextNode()) {
+                            const nodeText = node.textContent;
+                            // 태그 내용이 포함된 텍스트 노드 찾기
+                            if (nodeText.includes(plainText)) {
+                                // 텍스트 노드를 span으로 감싸기
+                                const parent = node.parentNode;
+                                const span = document.createElement('span');
+                                span.className = `font-tag-${tagNameLower}`;
+                                span.setAttribute('data-tag', tagNameLower);
+                                
+                                // 텍스트 노드를 분할하여 태그 내용만 span으로 감싸기
+                                const textBefore = nodeText.substring(0, nodeText.indexOf(plainText));
+                                const textAfter = nodeText.substring(nodeText.indexOf(plainText) + plainText.length);
+                                
+                                if (textBefore) {
+                                    parent.insertBefore(document.createTextNode(textBefore), node);
+                                }
+                                
+                                span.textContent = plainText;
+                                parent.insertBefore(span, node);
+                                
+                                if (textAfter) {
+                                    parent.insertBefore(document.createTextNode(textAfter), node);
+                                }
+                                
+                                parent.removeChild(node);
+                                hasChanges = true;
+                                console.log(`[Font Manager - Tag Custom] 텍스트 노드에서 태그 ${tagName} 변환 완료`);
+                                break;
+                            }
+                        }
+                    });
+                }
+                
                 // HTML 샘플 출력 (디버깅용) - 태그 이름이 포함되어 있는지 확인
-                const htmlContent = element.innerHTML;
                 const tagNameLowerInHtml = htmlContent.toLowerCase();
                 const hasTagName = tagNameLowerInHtml.includes(tagName.toLowerCase());
                 const hasEntityTag = htmlContent.includes(`&lt;${tagName.toLowerCase()}&gt;`) || 
@@ -3019,6 +3093,98 @@ function processMessageTags() {
     console.log('[Font Manager - Tag Custom] processMessageTags 완료');
 }
 
+// 메시지 전송 전 태그 변환 처리 설정
+function setupMessageTagPreprocessor() {
+    console.log('[Font Manager - Tag Custom] 메시지 전처리기 설정 시작');
+    
+    // 메시지 전송 버튼 찾기 및 이벤트 리스너 추가
+    const sendButton = document.querySelector('#send_but');
+    const sendForm = document.querySelector('#send_form');
+    const textarea = document.querySelector('#send_textarea');
+    
+    if (!sendButton && !sendForm && !textarea) {
+        console.log('[Font Manager - Tag Custom] 메시지 전송 요소를 찾을 수 없음, 재시도 예약');
+        setTimeout(setupMessageTagPreprocessor, 1000);
+        return;
+    }
+    
+    console.log('[Font Manager - Tag Custom] 메시지 전송 요소 찾음');
+    
+    // 폼 제출 이벤트 리스너
+    if (sendForm) {
+        sendForm.addEventListener('submit', function(e) {
+            console.log('[Font Manager - Tag Custom] 폼 제출 이벤트 감지');
+            processMessageInput();
+        }, true); // capture phase에서 먼저 처리
+    }
+    
+    // 전송 버튼 클릭 이벤트
+    if (sendButton) {
+        sendButton.addEventListener('click', function(e) {
+            console.log('[Font Manager - Tag Custom] 전송 버튼 클릭 감지');
+            setTimeout(processMessageInput, 10); // 약간의 지연으로 입력값 확보
+        }, true);
+    }
+    
+    // Enter 키 이벤트 (Ctrl+Enter, Shift+Enter 등)
+    if (textarea) {
+        textarea.addEventListener('keydown', function(e) {
+            // Enter 키 + Ctrl 또는 단독 Enter
+            if (e.key === 'Enter' && (!e.shiftKey && !e.ctrlKey && !e.metaKey)) {
+                console.log('[Font Manager - Tag Custom] Enter 키 감지');
+                setTimeout(processMessageInput, 10);
+            }
+        }, true);
+    }
+    
+    console.log('[Font Manager - Tag Custom] 메시지 전처리기 설정 완료');
+}
+
+// 메시지 입력 필드에서 태그 변환
+function processMessageInput() {
+    const customTags = settings?.customTags || [];
+    if (customTags.length === 0 || !settings.enabled) {
+        return;
+    }
+    
+    const textarea = document.querySelector('#send_textarea');
+    if (!textarea) {
+        console.log('[Font Manager - Tag Custom] textarea를 찾을 수 없음');
+        return;
+    }
+    
+    let text = textarea.value;
+    if (!text) {
+        return;
+    }
+    
+    console.log('[Font Manager - Tag Custom] 입력 메시지 처리 시작:', text.substring(0, 100));
+    
+    customTags.forEach(tag => {
+        if (tag.name && tag.fontName) {
+            const tagName = tag.name;
+            const tagNameLower = tag.name.toLowerCase();
+            const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi');
+            
+            if (regex.test(text)) {
+                console.log(`[Font Manager - Tag Custom] 입력에서 태그 ${tagName} 발견, 변환 시작`);
+                text = text.replace(
+                    regex,
+                    (match, content) => {
+                        console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 변환: "${content.substring(0, 50)}"`);
+                        return `<span class="font-tag-${tagNameLower}" data-tag="${tagNameLower}">${content}</span>`;
+                    }
+                );
+            }
+        }
+    });
+    
+    if (text !== textarea.value) {
+        textarea.value = text;
+        console.log('[Font Manager - Tag Custom] 입력 메시지 변환 완료');
+    }
+}
+
 // MutationObserver로 새 메시지 감지
 function setupTagObserver() {
     console.log('[Font Manager - Tag Custom] MutationObserver 설정 시작');
@@ -3077,6 +3243,9 @@ jQuery(async () => {
     
     await addToWandMenu();
     updateAllFonts();
+    
+    // 메시지 전송 전 태그 변환 처리
+    setupMessageTagPreprocessor();
     
     // 태그 처리 시작
     console.log('[Font Manager - Tag Custom] 확장 초기화 완료, 태그 처리 시작 예약');
