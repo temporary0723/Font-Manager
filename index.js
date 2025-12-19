@@ -187,8 +187,14 @@ function getChatData() {
     return null;
 }
 
+// 정규식 캐시 (태그별로 캐싱하여 재사용)
+const tagRegexCache = new Map();
+
+// 처리된 메시지 추적 (이미 처리된 메시지는 건너뛰기)
+const processedMessages = new WeakSet();
+
 // 메시지에 태그 커스텀 폰트 적용
-function applyCustomTagFonts() {
+function applyCustomTagFonts(forceRefresh = false) {
     if (!settings.enabled) return;
     
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
@@ -198,13 +204,45 @@ function applyCustomTagFonts() {
     
     if (customTags.length === 0) return;
     
+    // chatData 한 번만 가져오기
+    const chatData = getChatData();
+    if (!chatData) return;
+    
+    // 폰트 정보 미리 가져오기
+    const fonts = settings?.fonts || [];
+    const tagConfigs = customTags
+        .filter(tag => tag.tagName && tag.fontName)
+        .map(tag => {
+            const selectedFont = fonts.find(f => f.name === tag.fontName);
+            const actualFontFamily = selectedFont?.fontFamily || tag.fontName;
+            
+            // 정규식 캐싱
+            let tagRegex = tagRegexCache.get(tag.tagName);
+            if (!tagRegex) {
+                const escapedTagName = tag.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                tagRegex = new RegExp(`<${escapedTagName}>([\\s\\S]*?)</${escapedTagName}>`, 'gi');
+                tagRegexCache.set(tag.tagName, tagRegex);
+            }
+            
+            return {
+                tagName: tag.tagName,
+                fontFamily: actualFontFamily,
+                regex: tagRegex
+            };
+        });
+    
+    if (tagConfigs.length === 0) return;
+    
     // 모든 메시지 요소에 대해 처리
-    document.querySelectorAll('.mes').forEach((messageElement) => {
+    const messageElements = document.querySelectorAll('.mes');
+    messageElements.forEach((messageElement) => {
         const mesId = messageElement.getAttribute('mesid');
         if (!mesId) return;
         
-        const chatData = getChatData();
-        if (!chatData) return;
+        // 이미 처리된 메시지이고 강제 새로고침이 아닌 경우 건너뛰기
+        if (!forceRefresh && processedMessages.has(messageElement)) {
+            return;
+        }
         
         const messageIndex = parseInt(mesId);
         const message = chatData[messageIndex];
@@ -223,33 +261,23 @@ function applyCustomTagFonts() {
             return;
         }
         
+        // 이미 처리된 표시가 있는지 확인 (data 속성으로 확인)
+        if (!forceRefresh && messageContent.hasAttribute('data-tag-processed')) {
+            return;
+        }
+        
         // 메시지 내부 데이터에서 태그 찾기 (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
         let processedContent = message.mes;
         let hasChanges = false;
         
-        customTags.forEach(tag => {
-            const tagName = tag.tagName;
-            const fontName = tag.fontName;
-            
-            if (!tagName || !fontName) return;
-            
-            // 폰트 정보 가져오기
-            const fonts = settings?.fonts || [];
-            const selectedFont = fonts.find(f => f.name === fontName);
-            const actualFontFamily = selectedFont?.fontFamily || fontName;
-            
-            // 대소문자 구분 없이 태그 찾기 (정규식 플래그 i 사용)
-            // 여러 줄 태그 지원
-            // 특수문자 이스케이프
-            const escapedTagName = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const tagRegex = new RegExp(`<${escapedTagName}>([\\s\\S]*?)</${escapedTagName}>`, 'gi');
-            
-            processedContent = processedContent.replace(tagRegex, (match, content) => {
+        // 모든 태그에 대해 한 번에 처리
+        tagConfigs.forEach(tagConfig => {
+            processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
                 hasChanges = true;
                 // 줄바꿈을 <br>로 변환하여 유지
                 const contentWithBreaks = content.replace(/\n/g, '<br>');
                 // 태그 내용을 span으로 감싸서 폰트 적용
-                return `<span data-custom-tag-font="${actualFontFamily}" style="font-family: '${actualFontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
+                return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
             });
         });
         
@@ -258,6 +286,12 @@ function applyCustomTagFonts() {
             // 나머지 줄바꿈도 <br>로 변환
             processedContent = processedContent.replace(/\n/g, '<br>');
             messageContent.innerHTML = processedContent;
+            messageContent.setAttribute('data-tag-processed', 'true');
+            processedMessages.add(messageElement);
+        } else {
+            // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
+            messageContent.setAttribute('data-tag-processed', 'true');
+            processedMessages.add(messageElement);
         }
     });
 }
@@ -269,33 +303,74 @@ function setupCustomTagObserver() {
     // 에디터 상태 추적을 위한 맵
     const editingMessages = new Set();
     
+    // 디바운싱을 위한 타이머
+    let applyTimer = null;
+    let pendingApply = false;
+    
+    // 새로 추가된 메시지 추적 (중복 처리 방지)
+    const newMessages = new Set();
+    
+    const applyWithDebounce = (forceRefresh = false) => {
+        if (applyTimer) {
+            clearTimeout(applyTimer);
+        }
+        pendingApply = true;
+        applyTimer = setTimeout(() => {
+            if (pendingApply) {
+                applyCustomTagFonts(forceRefresh);
+                pendingApply = false;
+            }
+        }, 150); // 디바운싱 시간 증가 (100ms -> 150ms)
+    };
+    
     const observer = new MutationObserver((mutations) => {
         let shouldApply = false;
         let shouldCheckEditorClose = false;
         
-        mutations.forEach((mutation) => {
+        // mutations를 한 번만 순회하여 효율성 향상
+        for (const mutation of mutations) {
             if (mutation.type === 'childList') {
-                // 새 메시지 추가 감지
+                // 새 메시지 추가 감지 (더 효율적으로)
                 if (mutation.addedNodes.length > 0) {
-                    for (let node of mutation.addedNodes) {
-                        if (node.nodeType === Node.ELEMENT_NODE &&
-                            (node.classList?.contains('mes') ||
-                             node.querySelector?.('.mes'))) {
-                            shouldApply = true;
-                            break;
+                    for (let i = 0; i < mutation.addedNodes.length; i++) {
+                        const node = mutation.addedNodes[i];
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // 직접 .mes 클래스를 가진 노드인지 확인
+                            if (node.classList?.contains('mes')) {
+                                const mesId = node.getAttribute('mesid');
+                                if (mesId && !newMessages.has(mesId)) {
+                                    newMessages.add(mesId);
+                                    shouldApply = true;
+                                }
+                            } else if (node.querySelector) {
+                                // 하위에 .mes가 있는지 확인
+                                const mesElement = node.querySelector('.mes');
+                                if (mesElement) {
+                                    const mesId = mesElement.getAttribute('mesid');
+                                    if (mesId && !newMessages.has(mesId)) {
+                                        newMessages.add(mesId);
+                                        shouldApply = true;
+                                    }
+                                }
+                            }
                         }
+                        // 하나라도 발견하면 루프 종료
+                        if (shouldApply) break;
                     }
                 }
                 
-                // 에디터 열림/닫힘 감지
+                // 에디터 열림/닫힘 감지 (최적화)
                 if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
                     // 추가된 노드 중 textarea나 contenteditable 요소 확인
-                    for (let node of mutation.addedNodes) {
+                    for (let i = 0; i < mutation.addedNodes.length; i++) {
+                        const node = mutation.addedNodes[i];
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            const textarea = node.tagName === 'TEXTAREA' ? node : node.querySelector?.('textarea');
-                            const contentEditable = node.contentEditable === 'true' || node.querySelector?.('[contenteditable="true"]');
+                            const isTextarea = node.tagName === 'TEXTAREA';
+                            const isContentEditable = node.contentEditable === 'true';
                             
-                            if (textarea || contentEditable) {
+                            if (isTextarea || isContentEditable || 
+                                node.querySelector?.('textarea') || 
+                                node.querySelector?.('[contenteditable="true"]')) {
                                 const mesElement = node.closest?.('.mes');
                                 if (mesElement) {
                                     const mesId = mesElement.getAttribute('mesid');
@@ -308,12 +383,15 @@ function setupCustomTagObserver() {
                     }
                     
                     // 제거된 노드 중 textarea나 contenteditable 요소 확인 (에디터 닫힘)
-                    for (let node of mutation.removedNodes) {
+                    for (let i = 0; i < mutation.removedNodes.length; i++) {
+                        const node = mutation.removedNodes[i];
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            const textarea = node.tagName === 'TEXTAREA' ? node : node.querySelector?.('textarea');
-                            const contentEditable = node.contentEditable === 'true' || node.querySelector?.('[contenteditable="true"]');
+                            const isTextarea = node.tagName === 'TEXTAREA';
+                            const isContentEditable = node.contentEditable === 'true';
                             
-                            if (textarea || contentEditable) {
+                            if (isTextarea || isContentEditable || 
+                                node.querySelector?.('textarea') || 
+                                node.querySelector?.('[contenteditable="true"]')) {
                                 const mesElement = node.closest?.('.mes');
                                 if (mesElement) {
                                     const mesId = mesElement.getAttribute('mesid');
@@ -327,26 +405,24 @@ function setupCustomTagObserver() {
                     }
                     
                     // .mes_text 내부의 textarea나 contenteditable 변화 감지
-                    if (mutation.target) {
-                        const mesText = mutation.target.closest?.('.mes_text');
-                        if (mesText) {
-                            const mesElement = mesText.closest?.('.mes');
-                            if (mesElement) {
-                                const mesId = mesElement.getAttribute('mesid');
-                                if (mesId) {
-                                    const hasTextarea = mesText.querySelector('textarea') !== null;
-                                    const isContentEditable = mesText.contentEditable === 'true' || 
-                                                              mesText.querySelector('[contenteditable="true"]') !== null;
-                                    
-                                    if (hasTextarea || isContentEditable) {
-                                        if (!editingMessages.has(mesId)) {
-                                            editingMessages.add(mesId);
-                                        }
-                                    } else {
-                                        if (editingMessages.has(mesId)) {
-                                            editingMessages.delete(mesId);
-                                            shouldCheckEditorClose = true;
-                                        }
+                    const target = mutation.target;
+                    if (target && target.classList?.contains('mes_text')) {
+                        const mesElement = target.closest?.('.mes');
+                        if (mesElement) {
+                            const mesId = mesElement.getAttribute('mesid');
+                            if (mesId) {
+                                const hasTextarea = target.querySelector('textarea') !== null;
+                                const isContentEditable = target.contentEditable === 'true' || 
+                                                          target.querySelector('[contenteditable="true"]') !== null;
+                                
+                                if (hasTextarea || isContentEditable) {
+                                    if (!editingMessages.has(mesId)) {
+                                        editingMessages.add(mesId);
+                                    }
+                                } else {
+                                    if (editingMessages.has(mesId)) {
+                                        editingMessages.delete(mesId);
+                                        shouldCheckEditorClose = true;
                                     }
                                 }
                             }
@@ -373,13 +449,11 @@ function setupCustomTagObserver() {
                     }
                 }
             }
-        });
+        }
         
         // 새 메시지가 추가되었거나 에디터가 닫혔을 때 태그 적용
         if (shouldApply || shouldCheckEditorClose) {
-            setTimeout(() => {
-                applyCustomTagFonts();
-            }, 100);
+            applyWithDebounce(shouldCheckEditorClose);
         }
     });
     
@@ -1928,8 +2002,8 @@ function setupEventListeners(template) {
         // 설정 저장
         saveSettings();
         
-        // 메시지에 즉시 적용
-        applyCustomTagFonts();
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
     });
     
     // 태그 커스텀 삭제 버튼 이벤트
@@ -2087,8 +2161,8 @@ function deleteCustomTag(template, tagId) {
         
         saveSettings();
         
-        // 메시지에 즉시 적용
-        applyCustomTagFonts();
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
     }
 }
 
