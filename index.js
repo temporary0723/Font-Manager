@@ -262,27 +262,30 @@ function applyCustomTagFonts(forceRefresh = false) {
         }
         
         // 이미 처리된 표시가 있는지 확인 (data 속성으로 확인)
-        // 단, forceRefresh이거나 내용이 변경되었을 수 있으므로 체크
-        const currentContentHash = messageContent.innerHTML;
-        const lastProcessedHash = messageContent.getAttribute('data-tag-processed-hash');
-        if (!forceRefresh && messageContent.hasAttribute('data-tag-processed') && lastProcessedHash === currentContentHash) {
-            return;
+        // updateMessageBlock으로 인한 재렌더링인 경우 다시 처리하기 위해
+        // 번역문이 있는 경우에는 항상 재처리하도록 함
+        const hasDisplayText = message.extra?.display_text;
+        if (!forceRefresh && messageContent.hasAttribute('data-tag-processed')) {
+            // 번역문이 있고 재렌더링되었을 수 있으므로 재처리
+            if (hasDisplayText) {
+                messageContent.removeAttribute('data-tag-processed');
+                processedMessages.delete(messageElement);
+            } else {
+                return;
+            }
         }
         
-        // 현재 화면에 표시된 내용 가져오기 (번역문이면 번역문, 아니면 원문)
-        // 번역문에도 태그가 포함되어 있으므로 현재 HTML에서 직접 태그를 찾아서 폰트 적용
-        let processedContent = messageContent.innerHTML;
+        // 메시지 내부 데이터에서 태그 찾기
+        // display_text가 있으면 번역문에서, 없으면 원문에서 태그 찾기
+        // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
+        let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
+        
+        let processedContent = sourceText;
         let hasChanges = false;
         
-        // 현재 HTML 내용에서 태그 찾아서 폰트 적용
+        // 모든 태그에 대해 한 번에 처리
         tagConfigs.forEach(tagConfig => {
-            // 이미 span으로 감싸져 있지 않은 태그만 처리
-            const regex = new RegExp(`<${tagConfig.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}>([\\s\\S]*?)</${tagConfig.tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}>`, 'gi');
-            processedContent = processedContent.replace(regex, (match, content) => {
-                // 이미 data-custom-tag-font 속성이 있는 경우 건너뛰기
-                if (match.includes('data-custom-tag-font')) {
-                    return match;
-                }
+            processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
                 hasChanges = true;
                 // 줄바꿈을 <br>로 변환하여 유지
                 const contentWithBreaks = content.replace(/\n/g, '<br>');
@@ -293,14 +296,14 @@ function applyCustomTagFonts(forceRefresh = false) {
         
         // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
         if (hasChanges) {
+            // 나머지 줄바꿈도 <br>로 변환
+            processedContent = processedContent.replace(/\n/g, '<br>');
             messageContent.innerHTML = processedContent;
             messageContent.setAttribute('data-tag-processed', 'true');
-            messageContent.setAttribute('data-tag-processed-hash', currentContentHash);
             processedMessages.add(messageElement);
         } else {
             // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
             messageContent.setAttribute('data-tag-processed', 'true');
-            messageContent.setAttribute('data-tag-processed-hash', currentContentHash);
             processedMessages.add(messageElement);
         }
     });
@@ -340,6 +343,33 @@ function setupCustomTagObserver() {
         // mutations를 한 번만 순회하여 효율성 향상
         for (const mutation of mutations) {
             if (mutation.type === 'childList') {
+                // .mes_text 내용 변경 감지 (updateMessageBlock 등으로 인한 재렌더링)
+                const target = mutation.target;
+                if (target && target.classList?.contains('mes_text')) {
+                    const mesElement = target.closest?.('.mes');
+                    if (mesElement) {
+                        const mesId = mesElement.getAttribute('mesid');
+                        if (mesId) {
+                            // 번역문이 표시되는 경우 재처리를 위해 data-tag-processed 제거
+                            const messageContent = target;
+                            if (messageContent.hasAttribute('data-tag-processed')) {
+                                // chatData에서 번역문 확인
+                                const chatData = getChatData();
+                                if (chatData) {
+                                    const messageIndex = parseInt(mesId);
+                                    const message = chatData[messageIndex];
+                                    if (message?.extra?.display_text) {
+                                        // 번역문이 있으면 재처리를 위해 속성 제거
+                                        messageContent.removeAttribute('data-tag-processed');
+                                        processedMessages.delete(mesElement);
+                                        shouldApply = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // 새 메시지 추가 감지 (더 효율적으로)
                 if (mutation.addedNodes.length > 0) {
                     for (let i = 0; i < mutation.addedNodes.length; i++) {
