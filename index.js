@@ -590,8 +590,12 @@ function renderMessageFontSection(template) {
 
 // 태그 커스텀 섹션 렌더링
 function renderTagCustomSection(template) {
+    console.log('[Font Manager - Tag Custom] 태그 커스텀 섹션 렌더링 시작');
     const fonts = settings?.fonts || [];
     const customTags = settings?.customTags || [];
+    console.log('[Font Manager - Tag Custom] 사용 가능한 폰트 개수:', fonts.length);
+    console.log('[Font Manager - Tag Custom] 현재 태그 개수:', customTags.length);
+    
     const dropdown = template.find('#tag-font-dropdown');
     
     dropdown.empty();
@@ -601,8 +605,11 @@ function renderTagCustomSection(template) {
         dropdown.append(`<option value="${font.name}">${font.name}</option>`);
     });
     
+    console.log('[Font Manager - Tag Custom] 폰트 드롭다운 옵션 추가 완료');
+    
     // 태그 리스트 렌더링
     renderTagList(template);
+    console.log('[Font Manager - Tag Custom] 태그 커스텀 섹션 렌더링 완료');
 }
 
 // 태그 리스트 렌더링
@@ -1233,32 +1240,51 @@ ${languageFontCss.join('')}
     }
     
     // 태그 커스텀 폰트 적용
+    console.log('[Font Manager - Tag Custom] updateUIFont에서 태그 CSS 생성 시작');
     const customTags = settings?.customTags || [];
+    console.log('[Font Manager - Tag Custom] 태그 개수:', customTags.length);
+    
     if (customTags.length > 0) {
         const tagCss = [];
-        customTags.forEach(tag => {
+        customTags.forEach((tag, index) => {
+            console.log(`[Font Manager - Tag Custom] 태그 ${index + 1} CSS 생성: ${tag.name} -> ${tag.fontName}`);
+            
             if (tag.name && tag.fontName) {
                 const selectedFont = fonts.find(font => font.name === tag.fontName);
+                console.log(`[Font Manager - Tag Custom] 폰트 찾기 결과:`, selectedFont ? `찾음 (fontFamily: ${selectedFont.fontFamily})` : '없음');
+                
                 if (selectedFont) {
                     const actualFontFamily = selectedFont.fontFamily || tag.fontName;
                     // 태그 이름을 소문자로 변환하여 CSS 선택자로 사용
                     const tagNameLower = tag.name.toLowerCase();
-                    tagCss.push(`
+                    const cssRule = `
 /* CUSTOM TAG: ${tag.name} */
 .mes_text [data-tag="${tagNameLower}"],
 .mes_text .font-tag-${tagNameLower} {
   font-family: "${actualFontFamily}" !important;
-}`);
+}`;
+                    tagCss.push(cssRule);
+                    console.log(`[Font Manager - Tag Custom] CSS 규칙 생성 완료:`, cssRule);
+                } else {
+                    console.log(`[Font Manager - Tag Custom] 폰트를 찾을 수 없어서 CSS 생성 안 함`);
                 }
+            } else {
+                console.log(`[Font Manager - Tag Custom] 태그 정보가 불완전함 (name: ${tag.name}, fontName: ${tag.fontName})`);
             }
         });
         
         if (tagCss.length > 0) {
-            uiFontCss.push(`
+            const tagCssBlock = `
 /* CUSTOM TAG FONTS */
 ${tagCss.join('\n')}
-            `);
+            `;
+            uiFontCss.push(tagCssBlock);
+            console.log('[Font Manager - Tag Custom] 태그 CSS 블록 추가 완료:', tagCssBlock);
+        } else {
+            console.log('[Font Manager - Tag Custom] 생성된 CSS가 없어서 추가 안 함');
         }
+    } else {
+        console.log('[Font Manager - Tag Custom] 태그가 없어서 CSS 생성 안 함');
     }
     
     // FontAwesome 아이콘 보호
@@ -1719,28 +1745,37 @@ function setupEventListeners(template) {
     
     // 태그 추가 버튼
     template.find('#add-tag-btn').off('click').on('click', function() {
+        console.log('[Font Manager - Tag Custom] 태그 추가 버튼 클릭');
         const tagName = template.find('#tag-name-input').val().trim();
         const fontName = template.find('#tag-font-dropdown').val();
         
+        console.log('[Font Manager - Tag Custom] 입력된 태그 이름:', tagName);
+        console.log('[Font Manager - Tag Custom] 선택된 폰트:', fontName);
+        
         if (!tagName) {
+            console.log('[Font Manager - Tag Custom] 태그 이름이 비어있음');
             alert('태그 이름을 입력해주세요.');
             return;
         }
         
         if (!fontName) {
+            console.log('[Font Manager - Tag Custom] 폰트가 선택되지 않음');
             alert('폰트를 선택해주세요.');
             return;
         }
         
         // 태그 이름 유효성 검사 (영문, 숫자, 언더스코어만 허용)
         if (!/^[A-Za-z0-9_]+$/.test(tagName)) {
+            console.log('[Font Manager - Tag Custom] 태그 이름 유효성 검사 실패:', tagName);
             alert('태그 이름은 영문, 숫자, 언더스코어(_)만 사용할 수 있습니다.');
             return;
         }
         
         // 중복 검사
         const customTags = settings?.customTags || [];
-        if (customTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase())) {
+        const existingTag = customTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+        if (existingTag) {
+            console.log('[Font Manager - Tag Custom] 중복 태그 발견:', existingTag);
             alert('이미 존재하는 태그 이름입니다.');
             return;
         }
@@ -1752,8 +1787,12 @@ function setupEventListeners(template) {
             fontName: fontName
         };
         
+        console.log('[Font Manager - Tag Custom] 새 태그 생성:', newTag);
+        
         settings.customTags = settings.customTags || [];
         settings.customTags.push(newTag);
+        
+        console.log('[Font Manager - Tag Custom] 태그 추가 후 목록:', settings.customTags);
         
         // UI 초기화 및 업데이트
         template.find('#tag-name-input').val('');
@@ -1762,8 +1801,14 @@ function setupEventListeners(template) {
         setupTagEventListeners(template);
         
         saveSettings();
+        console.log('[Font Manager - Tag Custom] 설정 저장 완료');
+        
         updateUIFont(); // 폰트 업데이트
+        console.log('[Font Manager - Tag Custom] 폰트 업데이트 완료');
+        
         processMessageTags(); // 기존 메시지도 처리
+        console.log('[Font Manager - Tag Custom] 메시지 태그 처리 완료');
+        
         alert('태그가 추가되었습니다.');
     });
     
@@ -1857,21 +1902,39 @@ function setupTagEventListeners(template) {
 
 // 태그 삭제
 function deleteTag(template, tagId) {
-    if (!settings?.customTags) return;
+    console.log('[Font Manager - Tag Custom] 태그 삭제 시작, tagId:', tagId);
+    
+    if (!settings?.customTags) {
+        console.log('[Font Manager - Tag Custom] customTags가 없어서 삭제 불가');
+        return;
+    }
     
     const customTags = settings.customTags;
     const tagIndex = customTags.findIndex(tag => tag.id === tagId);
     
+    console.log('[Font Manager - Tag Custom] 태그 인덱스:', tagIndex);
+    
     if (tagIndex !== -1) {
+        const deletedTag = customTags[tagIndex];
+        console.log('[Font Manager - Tag Custom] 삭제할 태그:', deletedTag);
+        
         customTags.splice(tagIndex, 1);
+        console.log('[Font Manager - Tag Custom] 태그 삭제 완료, 남은 태그:', customTags);
         
         // UI 업데이트
         renderTagCustomSection(template);
         setupTagEventListeners(template);
         
         saveSettings();
+        console.log('[Font Manager - Tag Custom] 설정 저장 완료');
+        
         updateUIFont(); // 폰트 업데이트
+        console.log('[Font Manager - Tag Custom] 폰트 업데이트 완료');
+        
         processMessageTags(); // 기존 메시지도 다시 처리
+        console.log('[Font Manager - Tag Custom] 메시지 태그 처리 완료');
+    } else {
+        console.log('[Font Manager - Tag Custom] 태그를 찾을 수 없음');
     }
 }
 
@@ -2819,43 +2882,80 @@ function resetSettings(template) {
 
 // 태그 처리 함수 - 메시지 텍스트에서 태그를 찾아 폰트 적용
 function processMessageTags() {
+    console.log('[Font Manager - Tag Custom] processMessageTags 시작');
     const customTags = settings?.customTags || [];
-    if (customTags.length === 0 || !settings.enabled) {
+    console.log('[Font Manager - Tag Custom] 설정된 태그 개수:', customTags.length);
+    console.log('[Font Manager - Tag Custom] 태그 목록:', customTags);
+    console.log('[Font Manager - Tag Custom] 폰트 매니저 활성화 상태:', settings?.enabled);
+    
+    if (customTags.length === 0) {
+        console.log('[Font Manager - Tag Custom] 태그가 없어서 종료');
+        return;
+    }
+    
+    if (!settings.enabled) {
+        console.log('[Font Manager - Tag Custom] 폰트 매니저가 비활성화되어 있어서 종료');
         return;
     }
     
     // .mes_text 요소들 찾기
     const messageElements = document.querySelectorAll('.mes_text');
-    messageElements.forEach(element => {
+    console.log('[Font Manager - Tag Custom] 찾은 메시지 요소 개수:', messageElements.length);
+    
+    if (messageElements.length === 0) {
+        console.log('[Font Manager - Tag Custom] 메시지 요소를 찾을 수 없음');
+        return;
+    }
+    
+    messageElements.forEach((element, index) => {
+        console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1} 처리 시작`);
+        console.log(`[Font Manager - Tag Custom] 요소 HTML 길이:`, element.innerHTML.length);
+        
         // 이미 처리된 요소는 건너뛰기 (하지만 새로 추가된 태그가 있을 수 있으므로 재처리)
         const lastProcessedTags = element.dataset.processedTags || '';
         const currentTags = customTags.map(t => t.id).join(',');
+        console.log(`[Font Manager - Tag Custom] 이전 처리된 태그:`, lastProcessedTags);
+        console.log(`[Font Manager - Tag Custom] 현재 태그:`, currentTags);
         
         // 태그 목록이 변경되지 않았고 이미 처리된 경우 건너뛰기
         if (lastProcessedTags === currentTags && element.dataset.tagProcessed === 'true') {
+            console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1}는 이미 처리됨, 건너뜀`);
             return;
         }
         
         let hasChanges = false;
-        customTags.forEach(tag => {
+        customTags.forEach((tag, tagIndex) => {
             if (tag.name && tag.fontName) {
                 const tagName = tag.name;
-                const tagNameLower = tagName.toLowerCase();
+                const tagNameLower = tag.name.toLowerCase();
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagIndex + 1} 처리: ${tagName} -> ${tag.fontName}`);
+                
                 // 대소문자 구분 없이 태그 찾기
                 const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'gi');
                 
                 // 태그가 있는지 확인 (이미 span으로 변환된 것은 제외)
                 const testMatch = element.innerHTML.match(regex);
-                if (testMatch && !element.querySelector(`.font-tag-${tagNameLower}`)) {
+                const existingSpan = element.querySelector(`.font-tag-${tagNameLower}`);
+                
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 매칭 결과:`, testMatch ? `${testMatch.length}개 발견` : '없음');
+                console.log(`[Font Manager - Tag Custom] 이미 변환된 span 존재:`, existingSpan !== null);
+                
+                if (testMatch && !existingSpan) {
+                    console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 변환 시작`);
                     // 태그를 span으로 감싸기
                     element.innerHTML = element.innerHTML.replace(
                         regex,
                         (match, content) => {
                             hasChanges = true;
+                            console.log(`[Font Manager - Tag Custom] 태그 ${tagName} 변환: "${content}"`);
                             return `<span class="font-tag-${tagNameLower}" data-tag="${tagNameLower}">${content}</span>`;
                         }
                     );
+                } else if (testMatch && existingSpan) {
+                    console.log(`[Font Manager - Tag Custom] 태그 ${tagName}는 이미 변환됨`);
                 }
+            } else {
+                console.log(`[Font Manager - Tag Custom] 태그 ${tagIndex + 1}는 유효하지 않음 (name: ${tag.name}, fontName: ${tag.fontName})`);
             }
         });
         
@@ -2863,21 +2963,34 @@ function processMessageTags() {
         if (hasChanges) {
             element.dataset.tagProcessed = 'true';
             element.dataset.processedTags = currentTags;
+            console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1} 처리 완료 (변경사항 있음)`);
+        } else {
+            console.log(`[Font Manager - Tag Custom] 메시지 요소 ${index + 1} 처리 완료 (변경사항 없음)`);
         }
     });
+    
+    console.log('[Font Manager - Tag Custom] processMessageTags 완료');
 }
 
 // MutationObserver로 새 메시지 감지
 function setupTagObserver() {
+    console.log('[Font Manager - Tag Custom] MutationObserver 설정 시작');
     const observer = new MutationObserver((mutations) => {
+        console.log('[Font Manager - Tag Custom] DOM 변경 감지, mutations 개수:', mutations.length);
         let shouldProcess = false;
-        mutations.forEach((mutation) => {
+        mutations.forEach((mutation, index) => {
             if (mutation.addedNodes.length > 0) {
-                mutation.addedNodes.forEach((node) => {
+                console.log(`[Font Manager - Tag Custom] Mutation ${index + 1}: ${mutation.addedNodes.length}개 노드 추가`);
+                mutation.addedNodes.forEach((node, nodeIndex) => {
                     if (node.nodeType === 1) { // Element node
-                        if (node.classList && node.classList.contains('mes_text')) {
+                        const hasMesText = node.classList && node.classList.contains('mes_text');
+                        const hasMesTextChild = node.querySelector && node.querySelector('.mes_text');
+                        
+                        if (hasMesText) {
+                            console.log(`[Font Manager - Tag Custom] Mutation ${index + 1}, Node ${nodeIndex + 1}: .mes_text 클래스 발견`);
                             shouldProcess = true;
-                        } else if (node.querySelector && node.querySelector('.mes_text')) {
+                        } else if (hasMesTextChild) {
+                            console.log(`[Font Manager - Tag Custom] Mutation ${index + 1}, Node ${nodeIndex + 1}: .mes_text 자식 요소 발견`);
                             shouldProcess = true;
                         }
                     }
@@ -2886,17 +2999,28 @@ function setupTagObserver() {
         });
         
         if (shouldProcess) {
-            setTimeout(processMessageTags, 100);
+            console.log('[Font Manager - Tag Custom] 태그 처리 예약 (100ms 후)');
+            setTimeout(() => {
+                console.log('[Font Manager - Tag Custom] 예약된 태그 처리 실행');
+                processMessageTags();
+            }, 100);
+        } else {
+            console.log('[Font Manager - Tag Custom] 처리할 메시지 없음');
         }
     });
     
     // 채팅 영역 감시
     const chatContainer = document.querySelector('#chat') || document.querySelector('.chat-container') || document.body;
+    console.log('[Font Manager - Tag Custom] 채팅 컨테이너 찾기:', chatContainer ? chatContainer.className || chatContainer.id || 'body' : '없음');
+    
     if (chatContainer) {
         observer.observe(chatContainer, {
             childList: true,
             subtree: true
         });
+        console.log('[Font Manager - Tag Custom] MutationObserver 설정 완료');
+    } else {
+        console.log('[Font Manager - Tag Custom] 채팅 컨테이너를 찾을 수 없어서 Observer 설정 실패');
     }
 }
 
@@ -2908,8 +3032,11 @@ jQuery(async () => {
     updateAllFonts();
     
     // 태그 처리 시작
+    console.log('[Font Manager - Tag Custom] 확장 초기화 완료, 태그 처리 시작 예약');
     setTimeout(() => {
+        console.log('[Font Manager - Tag Custom] 초기 태그 처리 실행');
         processMessageTags();
+        console.log('[Font Manager - Tag Custom] MutationObserver 설정 시작');
         setupTagObserver();
     }, 2000);
     
