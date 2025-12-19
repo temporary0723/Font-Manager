@@ -116,12 +116,13 @@
     <div class="tag-custom-section" id="tag-custom-section">
         <h3>태그 커스텀</h3>
         <div class="tag-custom-guide">
-            <p>태그를 사용하여 특정 텍스트에만 폰트를 적용할 수 있습니다.</p>
-            <p>예: <code>&lt;MEMO&gt;이 텍스트는 MEMO 폰트로 표시됩니다&lt;/MEMO&gt;</code></p>
+            <p>태그를 사용하여 메시지의 특정 부분에 다른 폰트를 적용할 수 있습니다.</p>
+            <p><strong>사용법:</strong> 예를 들어 "MEMO" 태그를 추가하고 폰트를 선택하면, 메시지에서 <code>&lt;MEMO&gt;</code>와 <code>&lt;/MEMO&gt;</code> 사이의 텍스트가 해당 폰트로 표시됩니다.</p>
+            <p><strong>예시:</strong> "안녕하세요 <code>&lt;MEMO&gt;</code>이 부분은 특별한 폰트<code>&lt;/MEMO&gt;</code>입니다."</p>
         </div>
         <div class="tag-add-form">
             <div class="tag-inputs-row">
-                <input type="text" id="tag-name-input" class="tag-name-input" placeholder="태그 이름 (예: MEMO)" maxlength="50">
+                <input type="text" id="tag-name-input" class="tag-name-input" placeholder="태그 이름 입력 (예: MEMO)" maxlength="50">
                 <select id="tag-font-dropdown" class="tag-font-dropdown">
                     <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
                 </select>

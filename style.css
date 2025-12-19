@@ -1119,24 +1119,24 @@
     }
 }
 
-/* 태그 커스텀 섹션 */
-.tag-custom-section {
-    color: var(--SmartThemeBodyColor);
-}
-
+/* 태그 커스텀 섹션 스타일 */
 .tag-custom-guide {
-    margin-bottom: 15px;
-    padding: 10px;
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 15px;
     font-size: calc(var(--mainFontSize) * 0.9);
+    color: var(--SmartThemeBodyColor);
+    line-height: 1.6;
 }
 
 .tag-custom-guide p {
-    margin: 5px 0;
-    color: var(--SmartThemeBodyColor);
-    line-height: 1.5;
+    margin: 0 0 8px 0;
+}
+
+.tag-custom-guide p:last-child {
+    margin-bottom: 0;
 }
 
 .tag-custom-guide code {
@@ -1144,8 +1144,14 @@
     padding: 2px 6px;
     border-radius: 3px;
     font-family: 'Courier New', monospace;
-    color: var(--SmartThemeQuoteColor);
     font-size: calc(var(--mainFontSize) * 0.85);
+    color: var(--SmartThemeQuoteColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+}
+
+.tag-custom-guide strong {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: 600;
 }
 
 .tag-add-form {
