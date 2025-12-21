@@ -486,6 +486,25 @@
     color: var(--SmartThemeQuoteColor);
 }
 
+.font-upload-info pre {
+    background-color: var(--black70a);
+    padding: 8px;
+    border-radius: 3px;
+    margin: 8px 0;
+    font-family: 'Courier New', monospace;
+    font-size: calc(var(--mainFontSize) * 0.85);
+    color: var(--SmartThemeBodyColor);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.4;
+    border: 1px solid var(--SmartThemeBorderColor);
+}
+
+.font-upload-info strong {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: 600;
+}
+
 .font-upload-container {
     display: flex;
     align-items: center;

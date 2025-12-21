@@ -1312,11 +1312,6 @@ function renderMarkdownCustomSection(template) {
         } else {
             sizeInput.val('');
         }
-        
-        console.log(`[Markdown Custom] ${type} 렌더링:`, {
-            fontName: selectedFont || '없음',
-            fontSize: fontSize || '없음'
-        });
     });
     
     // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
@@ -1519,9 +1514,20 @@ function renderFontAddArea(template) {
         <div class="font-upload-section">
             <h3>폰트 파일 업로드</h3>
             <div class="font-upload-info">
-                <p>폰트 파일을 선택하여 직접 추가할 수 있습니다.</p>
-                <p>파일은 Base64로 변환되어 브라우저 저장소에 저장됩니다. (서버 권한 불필요)</p>
-                <p><strong>지원 형식:</strong> woff2, woff, ttf, otf (woff2 권장 - 가장 작은 파일 크기)</p>
+                <p><strong>⚠️ 주의사항:</strong></p>
+                <p>• 파일은 Base64로 변환되어 <strong>브라우저 localStorage에 저장</strong>됩니다.</p>
+                <p>• 큰 파일은 <strong>저장소 용량을 많이 차지</strong>하고, 폰트 변경 시 <strong>버벅임이 발생</strong>할 수 있습니다.</p>
+                <p style="margin-top: 10px;"><strong>💡 권장 방법:</strong></p>
+                <p>SillyTavern 설치 폴더의 <code>/public/webfonts</code>에 woff2 파일을 직접 넣고,</p>
+                <p>위의 <strong>"폰트 가져오기"</strong>에서 아래 형식으로 추가하는 것을 권장합니다:</p>
+                <pre style="background-color: var(--black70a); padding: 8px; border-radius: 3px; margin-top: 8px; font-size: 0.85em; overflow-x: auto;">@font-face {
+  font-family: "(폰트이름)";
+  font-weight: normal;
+  src: url("/webfonts/(폰트파일이름).woff2")
+    format("woff2");
+  font-style: normal;
+}</pre>
+                <p style="margin-top: 10px;"><strong>지원 형식:</strong> woff2, woff, ttf, otf (woff2 권장 - 가장 작은 파일 크기)</p>
             </div>
             <div class="font-upload-container">
                 <input type="file" id="font-file-input" class="font-file-input" accept=".woff2,.woff,.ttf,.otf" style="display: none;">
@@ -2566,7 +2572,6 @@ function setupEventListeners(template) {
         // 폰트 드롭다운 변경 이벤트
         template.find(`#markdown-${type}-font-dropdown`).off('change').on('change', function() {
             const fontName = $(this).val();
-            console.log(`[Markdown Custom] ${type} 폰트 변경:`, fontName);
             
             const currentPresetId = selectedPresetId ?? settings?.currentPreset;
             const presets = settings?.presets || [];
@@ -2601,7 +2606,6 @@ function setupEventListeners(template) {
         // 폰트 사이즈 입력 이벤트
         template.find(`#markdown-${type}-size-input`).off('change').on('change', function() {
             const fontSize = parseInt($(this).val());
-            console.log(`[Markdown Custom] ${type} 사이즈 변경:`, fontSize);
             
             if (!isNaN(fontSize) && fontSize >= 8 && fontSize <= 40) {
                 const currentPresetId = selectedPresetId ?? settings?.currentPreset;
