@@ -1069,45 +1069,6 @@
     box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
 }
 
-/* 태그 리스트 아이템의 폰트 사이즈 입력 필드 */
-.custom-tag-size-field {
-    flex: 0 0 auto;
-    width: 80px;
-    min-width: 70px;
-    padding: 6px 8px;
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 3px;
-    background-color: var(--black50a);
-    color: var(--SmartThemeBodyColor);
-    font-family: inherit;
-    font-size: calc(var(--mainFontSize) * 0.85);
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.custom-tag-size-field:focus {
-    outline: none;
-    border-color: var(--SmartThemeQuoteColor);
-    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
-}
-
-.custom-tag-size-field::placeholder {
-    color: var(--grey30);
-    opacity: 0.7;
-    font-size: calc(var(--mainFontSize) * 0.75);
-}
-
-/* 숫자 입력 필드의 스피너 버튼 스타일링 (Chrome, Safari, Edge) */
-.custom-tag-size-field::-webkit-inner-spin-button,
-.custom-tag-size-field::-webkit-outer-spin-button {
-    opacity: 1;
-}
-
-/* Firefox의 숫자 입력 스피너 스타일링 */
-.custom-tag-size-field[type="number"] {
-    -moz-appearance: textfield;
-}
-
 .add-custom-tag-btn {
     display: flex;
     align-items: center;
@@ -1155,15 +1116,14 @@
 
 .custom-tag-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     padding: 10px;
     margin-bottom: 8px;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     background-color: var(--black30a);
     transition: all 0.2s ease;
-    gap: 10px;
+    gap: 8px;
 }
 
 .custom-tag-item:hover {
@@ -1181,6 +1141,42 @@
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.custom-tag-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.custom-tag-size-label {
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.9);
+    white-space: nowrap;
+}
+
+.custom-tag-size-input {
+    width: 70px;
+    padding: 4px 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.custom-tag-size-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.custom-tag-size-input:hover {
+    border-color: var(--SmartThemeQuoteColor);
 }
 
 .custom-tag-name {
@@ -1245,7 +1241,6 @@
     .custom-tag-name-input,
     .custom-tag-font-dropdown {
         min-width: unset;
-        width: 100%;
     }
     
     .add-custom-tag-btn {
@@ -1254,30 +1249,20 @@
         max-width: none;
     }
     
-    .custom-tag-item {
-        flex-wrap: wrap;
-    }
-    
     .custom-tag-info {
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
         gap: 5px;
-        text-align: center;
-        flex: 1 1 100%;
-    }
-    
-    .custom-tag-size-field {
-        width: 100%;
-        max-width: 150px;
-        margin: 0 auto;
+        text-align: left;
     }
     
     .custom-tag-arrow {
         display: none;
     }
     
-    .remove-custom-tag-btn {
-        margin: 0 auto;
+    .custom-tag-controls {
+        justify-content: flex-start;
+        width: 100%;
     }
 }
 
@@ -1289,12 +1274,6 @@
     .custom-tag-item {
         padding: 8px;
         gap: 8px;
-        flex-direction: column;
-    }
-    
-    .custom-tag-size-field {
-        width: 100%;
-        max-width: none;
     }
     
     .add-custom-tag-btn {
