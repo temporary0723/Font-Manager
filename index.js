@@ -234,6 +234,53 @@ const processedMessages = new Set();
 // Observer 인스턴스 저장 (disconnect/reconnect용)
 let customTagObserverInstance = null;
 
+// 모든 태그 커스텀 폰트 제거
+function removeAllCustomTagFonts() {
+    const chatData = getChatData();
+    
+    // 모든 메시지에서 태그 폰트 span 제거하고 원본으로 복원
+    document.querySelectorAll('.mes').forEach(mesElement => {
+        const mesId = mesElement.getAttribute('mesid');
+        if (!mesId) return;
+        
+        const mesText = mesElement.querySelector('.mes_text');
+        if (!mesText) return;
+        
+        // 에디터 모드인지 확인 (편집 중이면 건너뛰기)
+        const hasTextarea = mesText.querySelector('textarea') !== null;
+        const isContentEditable = mesText.contentEditable === 'true' || 
+                                  mesText.querySelector('[contenteditable="true"]') !== null;
+        
+        if (hasTextarea || isContentEditable) {
+            return;
+        }
+        
+        // data-custom-tag-font가 있는 경우에만 처리
+        const tagFontSpans = mesText.querySelectorAll('[data-custom-tag-font]');
+        if (tagFontSpans.length > 0) {
+            // chatData에서 원본 메시지 가져오기
+            if (chatData) {
+                const messageIndex = parseInt(mesId);
+                const message = chatData[messageIndex];
+                if (message) {
+                    // 번역문이 있으면 display_text, 없으면 mes 사용
+                    const sourceText = message.extra?.display_text || message.mes;
+                    
+                    // 줄바꿈을 <br>로 변환하여 원본 메시지 복원
+                    const restoredHTML = sourceText.replace(/\n/g, '<br>');
+                    mesText.innerHTML = restoredHTML;
+                }
+            }
+            
+            // 처리 마크 제거
+            mesText.removeAttribute('data-tag-processed');
+        }
+    });
+    
+    // 처리된 메시지 추적 초기화
+    processedMessages.clear();
+}
+
 // 메시지에 태그 커스텀 폰트 적용
 function applyCustomTagFonts(forceRefresh = false) {
     if (!settings.enabled) return;
@@ -247,9 +294,12 @@ function applyCustomTagFonts(forceRefresh = false) {
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
     
-    // 태그 커스텀이 비활성화되어 있으면 종료
+    // 태그 커스텀이 비활성화되어 있으면 기존 태그 폰트 제거 후 종료
     const customTagEnabled = currentPreset?.customTagEnabled ?? settings?.customTagEnabled ?? false;
     if (!customTagEnabled) {
+        // 이미 적용된 태그 폰트를 모두 제거
+        removeAllCustomTagFonts();
+        
         // Observer 다시 연결
         if (customTagObserverInstance) {
             const chatContainer = document.getElementById('chat');
