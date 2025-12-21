@@ -52,6 +52,7 @@ let tempUiFont = null;
 let tempMessageFont = null;
 let originalUIStyles = null;
 let fontStyle = null;
+let markdownStyle = null;
 let settings = null;
 // 기본 폰트 명시적 선택 플래그
 let isUIFontExplicitlyDefault = false;
@@ -1915,6 +1916,109 @@ function getCurrentPresetChatLineHeight() {
     return null;
 }
 
+// 마크다운 커스텀 폰트 적용
+function applyMarkdownCustomFonts() {
+    // 기존 마크다운 스타일 제거
+    if (markdownStyle) {
+        markdownStyle.remove();
+        markdownStyle = null;
+    }
+    
+    // 폰트 매니저가 비활성화되어 있으면 아무것도 하지 않음
+    if (!settings.enabled) {
+        return;
+    }
+    
+    // 현재 프리셋 또는 전역 설정에서 마크다운 커스텀 설정 가져오기
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
+    const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom;
+    
+    // 마크다운 커스텀이 비활성화되어 있으면 아무것도 하지 않음
+    if (!markdownEnabled || !markdownCustom) {
+        return;
+    }
+    
+    // 새 스타일 엘리먼트 생성
+    markdownStyle = document.createElement('style');
+    markdownStyle.id = 'font-manager-markdown-custom';
+    document.head.appendChild(markdownStyle);
+    
+    const fonts = settings?.fonts || [];
+    const markdownCss = [];
+    
+    // 대화문 (q, blockquote)
+    if (markdownCustom.dialogue?.fontName) {
+        const font = fonts.find(f => f.name === markdownCustom.dialogue.fontName);
+        const fontFamily = font?.fontFamily || markdownCustom.dialogue.fontName;
+        const fontSize = markdownCustom.dialogue.fontSize;
+        const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        
+        markdownCss.push(`
+/* 대화문 - "따옴표"로 둘러싸인 텍스트 */
+.mes_text q,
+.mes_text blockquote {
+  font-family: "${fontFamily}" !important;
+  font-style: normal !important;
+${fontSizeStyle}}
+        `);
+    }
+    
+    // 이탤릭체 (em)
+    if (markdownCustom.italic?.fontName) {
+        const font = fonts.find(f => f.name === markdownCustom.italic.fontName);
+        const fontFamily = font?.fontFamily || markdownCustom.italic.fontName;
+        const fontSize = markdownCustom.italic.fontSize;
+        const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        
+        markdownCss.push(`
+/* 이탤릭체 - *별표 하나*로 둘러싸인 텍스트 */
+.mes_text em {
+  font-family: "${fontFamily}" !important;
+  font-style: italic !important;
+${fontSizeStyle}}
+        `);
+    }
+    
+    // 밑줄 (u)
+    if (markdownCustom.underline?.fontName) {
+        const font = fonts.find(f => f.name === markdownCustom.underline.fontName);
+        const fontFamily = font?.fontFamily || markdownCustom.underline.fontName;
+        const fontSize = markdownCustom.underline.fontSize;
+        const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        
+        markdownCss.push(`
+/* 밑줄 - __밑줄__로 둘러싸인 텍스트 */
+.mes_text u {
+  font-family: "${fontFamily}" !important;
+  text-decoration: underline !important;
+${fontSizeStyle}}
+        `);
+    }
+    
+    // 강조 (strong)
+    if (markdownCustom.strong?.fontName) {
+        const font = fonts.find(f => f.name === markdownCustom.strong.fontName);
+        const fontFamily = font?.fontFamily || markdownCustom.strong.fontName;
+        const fontSize = markdownCustom.strong.fontSize;
+        const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        
+        markdownCss.push(`
+/* 강조 - **별표 둘**로 둘러싸인 텍스트 */
+.mes_text strong {
+  font-family: "${fontFamily}" !important;
+  font-weight: bold !important;
+${fontSizeStyle}}
+        `);
+    }
+    
+    // 스타일 적용
+    markdownStyle.innerHTML = markdownCss.join('\n');
+}
+
 // UI 폰트 임시 적용
 function applyTempUIFont(fontName) {
     tempUiFont = fontName;
@@ -1967,6 +2071,7 @@ function setupEventListeners(template) {
         settings.enabled = $(this).prop('checked');
         saveSettings();
         updateUIFont(); // 토글 상태 변경 시 스타일 업데이트
+        applyMarkdownCustomFonts(); // 마크다운 커스텀 폰트 업데이트
         updateSectionsState(template, settings.enabled); // 섹션들 활성화/비활성화
     });
     
@@ -2111,6 +2216,110 @@ function setupEventListeners(template) {
             tempMessageFont = null;
             updateUIFont();
         }
+    });
+    
+    // 마크다운 커스텀 활성화 토글 이벤트
+    template.find('#markdown-custom-enabled-toggle').off('change').on('change', function() {
+        const enabled = $(this).prop('checked');
+        
+        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === currentPresetId);
+        
+        if (currentPreset) {
+            currentPreset.markdownCustomEnabled = enabled;
+        } else {
+            settings.markdownCustomEnabled = enabled;
+        }
+        
+        updateMarkdownSectionState(template, enabled);
+        saveSettings();
+        applyMarkdownCustomFonts(); // 마크다운 설정 변경 시 폰트 업데이트
+    });
+    
+    // 마크다운 타입별 폰트 드롭다운 및 사이즈 입력 이벤트
+    const markdownTypes = ['dialogue', 'italic', 'underline', 'strong'];
+    markdownTypes.forEach(type => {
+        // 폰트 드롭다운 변경 이벤트
+        template.find(`#markdown-${type}-font-dropdown`).off('change').on('change', function() {
+            const fontName = $(this).val();
+            
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            
+            if (currentPreset) {
+                if (!currentPreset.markdownCustom) {
+                    currentPreset.markdownCustom = {
+                        dialogue: { fontName: null, fontSize: null },
+                        italic: { fontName: null, fontSize: null },
+                        underline: { fontName: null, fontSize: null },
+                        strong: { fontName: null, fontSize: null }
+                    };
+                }
+                currentPreset.markdownCustom[type].fontName = fontName || null;
+            } else {
+                if (!settings.markdownCustom) {
+                    settings.markdownCustom = {
+                        dialogue: { fontName: null, fontSize: null },
+                        italic: { fontName: null, fontSize: null },
+                        underline: { fontName: null, fontSize: null },
+                        strong: { fontName: null, fontSize: null }
+                    };
+                }
+                settings.markdownCustom[type].fontName = fontName || null;
+            }
+            
+            saveSettings();
+            applyMarkdownCustomFonts();
+        });
+        
+        // 폰트 사이즈 입력 이벤트
+        template.find(`#markdown-${type}-size-input`).off('change').on('change', function() {
+            const fontSize = parseInt($(this).val());
+            
+            if (!isNaN(fontSize) && fontSize >= 8 && fontSize <= 40) {
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                
+                if (currentPreset) {
+                    if (!currentPreset.markdownCustom) {
+                        currentPreset.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null },
+                            italic: { fontName: null, fontSize: null },
+                            underline: { fontName: null, fontSize: null },
+                            strong: { fontName: null, fontSize: null }
+                        };
+                    }
+                    currentPreset.markdownCustom[type].fontSize = fontSize;
+                } else {
+                    if (!settings.markdownCustom) {
+                        settings.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null },
+                            italic: { fontName: null, fontSize: null },
+                            underline: { fontName: null, fontSize: null },
+                            strong: { fontName: null, fontSize: null }
+                        };
+                    }
+                    settings.markdownCustom[type].fontSize = fontSize;
+                }
+                
+                saveSettings();
+                applyMarkdownCustomFonts();
+            } else if (fontSize < 8 || fontSize > 40) {
+                alert('폰트 크기는 8px에서 40px 사이여야 합니다.');
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                const currentSize = currentPreset?.markdownCustom?.[type]?.fontSize ?? settings.markdownCustom?.[type]?.fontSize;
+                if (currentSize) {
+                    $(this).val(currentSize);
+                } else {
+                    $(this).val('');
+                }
+            }
+        });
     });
     
     // 다국어 폰트 활성화 토글 이벤트
@@ -2690,6 +2899,7 @@ function deleteFont(template, fontId) {
 // 모든 폰트 업데이트 (초기 로드용)  
 function updateAllFonts() {
     updateUIFont();
+    applyMarkdownCustomFonts();
     // 테마 자동 감지 시작
     startThemeDetection();
     // 태그 커스텀 옵저버 시작
@@ -2802,6 +3012,7 @@ function applyPresetById(presetId) {
     
     // 폰트 적용
     updateUIFont();
+    applyMarkdownCustomFonts();
 }
 
 // SillyTavern 테마 이벤트 감지 설정
