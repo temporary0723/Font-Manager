@@ -1050,8 +1050,6 @@ function updateMultiLanguageSectionState(template, enabled) {
 
 // 마크다운 커스텀 섹션 렌더링
 function renderMarkdownCustomSection(template) {
-    console.log('[Markdown Custom] renderMarkdownCustomSection 호출');
-    
     const fonts = settings?.fonts || [];
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
@@ -1060,12 +1058,6 @@ function renderMarkdownCustomSection(template) {
     // 마크다운 활성화 체크박스 설정
     const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
     template.find('#markdown-custom-enabled-toggle').prop('checked', markdownEnabled);
-    
-    console.log('[Markdown Custom] 렌더링 설정:', {
-        currentPresetId: currentPresetId,
-        markdownEnabled: markdownEnabled,
-        fontsCount: fonts.length
-    });
     
     // 마크다운 설정 가져오기
     const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom ?? {
@@ -1117,18 +1109,14 @@ function renderMarkdownCustomSection(template) {
 
 // 마크다운 섹션 활성화 상태 업데이트
 function updateMarkdownSectionState(template, enabled) {
-    console.log('[Markdown Custom] updateMarkdownSectionState:', enabled);
-    
     const markdownSelectors = template.find('#markdown-font-selectors');
     
     if (enabled) {
         markdownSelectors.removeClass('disabled-section');
         markdownSelectors.find('select, input').prop('disabled', false);
-        console.log('[Markdown Custom] 섹션 활성화됨');
     } else {
         markdownSelectors.addClass('disabled-section');
         markdownSelectors.find('select, input').prop('disabled', true);
-        console.log('[Markdown Custom] 섹션 비활성화됨');
     }
 }
 
@@ -1593,7 +1581,6 @@ function updateUIFont() {
     const markdownExclusions = markdownEnabled 
         ? ':not(em):not(strong):not(q):not(blockquote):not(u)'
         : '';
-    console.log('[Markdown Custom] 메시지 폰트 CSS에 마크다운 제외:', markdownEnabled);
     
     // CSS 변수 설정 (전역 설정 우선)
     const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
@@ -1950,18 +1937,14 @@ function getCurrentPresetChatLineHeight() {
 
 // 마크다운 커스텀 폰트 적용 (내부 버전 - updateUIFont에서 호출)
 function applyMarkdownCustomFontsInternal() {
-    console.log('[Markdown Custom] applyMarkdownCustomFontsInternal 시작');
-    
     // 기존 마크다운 스타일 제거
     if (markdownStyle) {
         markdownStyle.remove();
         markdownStyle = null;
-        console.log('[Markdown Custom] 기존 스타일 제거됨');
     }
     
     // 폰트 매니저가 비활성화되어 있으면 아무것도 하지 않음
     if (!settings.enabled) {
-        console.log('[Markdown Custom] Font Manager 비활성화됨');
         return;
     }
     
@@ -1973,31 +1956,14 @@ function applyMarkdownCustomFontsInternal() {
     const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
     const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom;
     
-    console.log('[Markdown Custom] 설정:', {
-        currentPresetId: currentPresetId,
-        markdownEnabled: markdownEnabled,
-        markdownCustom: markdownCustom
-    });
-    
     // 마크다운 커스텀이 비활성화되어 있으면 아무것도 하지 않음
     if (!markdownEnabled || !markdownCustom) {
-        console.log('[Markdown Custom] 마크다운 커스텀 비활성화 또는 설정 없음');
         return;
     }
     
     // 새 스타일 엘리먼트 생성
     markdownStyle = document.createElement('style');
     markdownStyle.id = 'font-manager-markdown-custom';
-    
-    // head의 맨 마지막에 추가 (다른 모든 스타일보다 우선순위 높게)
-    // 심지어 다른 확장 프로그램 스타일보다도 나중에 오도록
-    const lastChild = document.head.lastElementChild;
-    if (lastChild) {
-        lastChild.after(markdownStyle);
-    } else {
-        document.head.appendChild(markdownStyle);
-    }
-    console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 맨 끝 - 최고 우선순위)');
     
     const fonts = settings?.fonts || [];
     const markdownCss = [];
@@ -2009,12 +1975,6 @@ function applyMarkdownCustomFontsInternal() {
         const fontSize = markdownCustom.dialogue.fontSize;
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
         
-        console.log('[Markdown Custom] 대화문 적용:', {
-            fontName: markdownCustom.dialogue.fontName,
-            fontFamily: fontFamily,
-            fontSize: fontSize
-        });
-        
         markdownCss.push(`
 /* 대화문 - "따옴표"로 둘러싸인 텍스트 */
 html body .mes_text q,
@@ -2023,8 +1983,6 @@ html body .mes_text blockquote {
   font-style: normal !important;
 ${fontSizeStyle}}
         `);
-    } else {
-        console.log('[Markdown Custom] 대화문 폰트 없음');
     }
     
     // 이탤릭체 (em)
@@ -2034,12 +1992,6 @@ ${fontSizeStyle}}
         const fontSize = markdownCustom.italic.fontSize;
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
         
-        console.log('[Markdown Custom] 이탤릭체 적용:', {
-            fontName: markdownCustom.italic.fontName,
-            fontFamily: fontFamily,
-            fontSize: fontSize
-        });
-        
         markdownCss.push(`
 /* 이탤릭체 - *별표 하나*로 둘러싸인 텍스트 */
 html body .mes_text em {
@@ -2047,8 +1999,6 @@ html body .mes_text em {
   font-style: italic !important;
 ${fontSizeStyle}}
         `);
-    } else {
-        console.log('[Markdown Custom] 이탤릭체 폰트 없음');
     }
     
     // 밑줄 (u)
@@ -2058,12 +2008,6 @@ ${fontSizeStyle}}
         const fontSize = markdownCustom.underline.fontSize;
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
         
-        console.log('[Markdown Custom] 밑줄 적용:', {
-            fontName: markdownCustom.underline.fontName,
-            fontFamily: fontFamily,
-            fontSize: fontSize
-        });
-        
         markdownCss.push(`
 /* 밑줄 - __밑줄__로 둘러싸인 텍스트 */
 html body .mes_text u {
@@ -2071,8 +2015,6 @@ html body .mes_text u {
   text-decoration: underline !important;
 ${fontSizeStyle}}
         `);
-    } else {
-        console.log('[Markdown Custom] 밑줄 폰트 없음');
     }
     
     // 강조 (strong)
@@ -2082,12 +2024,6 @@ ${fontSizeStyle}}
         const fontSize = markdownCustom.strong.fontSize;
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
         
-        console.log('[Markdown Custom] 강조 적용:', {
-            fontName: markdownCustom.strong.fontName,
-            fontFamily: fontFamily,
-            fontSize: fontSize
-        });
-        
         markdownCss.push(`
 /* 강조 - **별표 둘**로 둘러싸인 텍스트 */
 html body .mes_text strong {
@@ -2095,15 +2031,11 @@ html body .mes_text strong {
   font-weight: bold !important;
 ${fontSizeStyle}}
         `);
-    } else {
-        console.log('[Markdown Custom] 강조 폰트 없음');
     }
     
     // 스타일 적용
-    console.log('[Markdown Custom] 생성된 CSS 개수:', markdownCss.length);
     if (markdownCss.length > 0) {
         markdownStyle.innerHTML = markdownCss.join('\n');
-        console.log('[Markdown Custom] CSS 적용 완료:', markdownStyle.innerHTML);
         
         // markdownStyle을 명시적으로 head의 맨 끝으로 이동 (최고 우선순위 보장)
         // fontStyle이 재생성되어도 markdownStyle이 항상 마지막에 오도록
@@ -2111,24 +2043,11 @@ ${fontSizeStyle}}
             markdownStyle.remove();
         }
         document.head.appendChild(markdownStyle);
-        console.log('[Markdown Custom] ✅ 스타일을 head 맨 끝으로 이동 (최고 우선순위)');
-        
-        // DOM에 실제로 추가되었는지 확인
-        const addedStyle = document.getElementById('font-manager-markdown-custom');
-        if (addedStyle) {
-            console.log('[Markdown Custom] ✅ 스타일이 DOM에 성공적으로 추가됨');
-            console.log('[Markdown Custom] 스타일 위치:', addedStyle.parentNode?.nodeName);
-        } else {
-            console.error('[Markdown Custom] ❌ 스타일이 DOM에 추가되지 않음!');
-        }
-    } else {
-        console.log('[Markdown Custom] 적용할 CSS 없음');
     }
 }
 
 // 마크다운 커스텀 폰트 적용 (외부에서 호출 - updateUIFont도 함께 호출)
 function applyMarkdownCustomFonts() {
-    console.log('[Markdown Custom] applyMarkdownCustomFonts (래퍼) 호출');
     // updateUIFont를 호출하면 내부에서 applyMarkdownCustomFontsInternal이 자동으로 호출됨
     updateUIFont();
 }
@@ -2334,7 +2253,6 @@ function setupEventListeners(template) {
     // 마크다운 커스텀 활성화 토글 이벤트
     template.find('#markdown-custom-enabled-toggle').off('change').on('change', function() {
         const enabled = $(this).prop('checked');
-        console.log('[Markdown Custom] 토글 변경:', enabled);
         
         const currentPresetId = selectedPresetId ?? settings?.currentPreset;
         const presets = settings?.presets || [];
@@ -2342,10 +2260,8 @@ function setupEventListeners(template) {
         
         if (currentPreset) {
             currentPreset.markdownCustomEnabled = enabled;
-            console.log('[Markdown Custom] 프리셋에 저장:', currentPreset.id);
         } else {
             settings.markdownCustomEnabled = enabled;
-            console.log('[Markdown Custom] 전역 설정에 저장');
         }
         
         updateMarkdownSectionState(template, enabled);
