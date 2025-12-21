@@ -1583,6 +1583,18 @@ function updateUIFont() {
     const uiFontCss = [];
     const cssVariables = [];
     
+    // 마크다운 커스텀 활성화 여부 확인 (프리셋별 또는 전역)
+    const currentPresetId = settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
+    
+    // 마크다운 커스텀이 활성화되어 있으면 마크다운 요소를 제외하는 :not() 추가
+    const markdownExclusions = markdownEnabled 
+        ? ':not(em):not(strong):not(q):not(blockquote):not(u)'
+        : '';
+    console.log('[Markdown Custom] 메시지 폰트 CSS에 마크다운 제외:', markdownEnabled);
+    
     // CSS 변수 설정 (전역 설정 우선)
     const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
     const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
@@ -1785,7 +1797,7 @@ ${languageFontCss.join('')}
             uiFontCss.push(`
 /* MESSAGE FONT APPLICATION - Font Manager Override */
 .mes_text,
-.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"])${markdownExclusions} {
   font-family: "${actualMessageFontFamily}" !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1803,7 +1815,7 @@ ${languageFontCss.join('')}
             uiFontCss.push(`
 /* MESSAGE FONT SIZE/WEIGHT APPLICATION - Font Manager Override (Default Font) */
 .mes_text,
-.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"]) {
+.mes_text *:not(.fa):not(.fas):not(.far):not(.fab):not(.fal):not(.fad):not(.fass):not(.fasr):not(.fasl):not(.fasd):not([class*="fa-"]):not(i[class*="fa"])${markdownExclusions} {
   font-family: initial !important;
   font-size: var(--font-manager-chat-size) !important;
   line-height: var(--font-manager-chat-line-height) !important;
@@ -1973,11 +1985,19 @@ function applyMarkdownCustomFontsInternal() {
         return;
     }
     
-    // 새 스타일 엘리먼트 생성 (항상 head 끝에 추가하여 최우선 적용)
+    // 새 스타일 엘리먼트 생성
     markdownStyle = document.createElement('style');
     markdownStyle.id = 'font-manager-markdown-custom';
-    document.head.appendChild(markdownStyle);
-    console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 끝 - 최우선)');
+    
+    // head의 맨 마지막에 추가 (다른 모든 스타일보다 우선순위 높게)
+    // 심지어 다른 확장 프로그램 스타일보다도 나중에 오도록
+    const lastChild = document.head.lastElementChild;
+    if (lastChild) {
+        lastChild.after(markdownStyle);
+    } else {
+        document.head.appendChild(markdownStyle);
+    }
+    console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 맨 끝 - 최고 우선순위)');
     
     const fonts = settings?.fonts || [];
     const markdownCss = [];
@@ -2084,6 +2104,14 @@ ${fontSizeStyle}}
     if (markdownCss.length > 0) {
         markdownStyle.innerHTML = markdownCss.join('\n');
         console.log('[Markdown Custom] CSS 적용 완료:', markdownStyle.innerHTML);
+        
+        // markdownStyle을 명시적으로 head의 맨 끝으로 이동 (최고 우선순위 보장)
+        // fontStyle이 재생성되어도 markdownStyle이 항상 마지막에 오도록
+        if (markdownStyle.parentNode) {
+            markdownStyle.remove();
+        }
+        document.head.appendChild(markdownStyle);
+        console.log('[Markdown Custom] ✅ 스타일을 head 맨 끝으로 이동 (최고 우선순위)');
         
         // DOM에 실제로 추가되었는지 확인
         const addedStyle = document.getElementById('font-manager-markdown-custom');
