@@ -789,12 +789,12 @@ function fileToBase64(file) {
 async function processFontFile(file, fontName) {
     try {
         // 파일 유효성 검사
-        const validExtensions = ['.woff2'];
+        const validExtensions = ['.woff2', '.woff', '.ttf', '.otf'];
         const fileName = file.name.toLowerCase();
         const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
         
         if (!isValidExtension) {
-            throw new Error('지원하지 않는 파일 형식입니다. woff2 파일만 업로드 가능합니다.');
+            throw new Error('지원하지 않는 파일 형식입니다. woff2, woff, ttf, otf 파일만 업로드 가능합니다.');
         }
         
         // 파일 크기 체크 (10MB 제한)
@@ -805,11 +805,21 @@ async function processFontFile(file, fontName) {
         // 파일을 Base64 Data URL로 변환
         const base64Data = await fileToBase64(file);
         
+        // 파일 확장자에 따른 format 결정
+        const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1);
+        const formatMap = {
+            'woff2': 'woff2',
+            'woff': 'woff',
+            'ttf': 'truetype',
+            'otf': 'opentype'
+        };
+        const format = formatMap[fileExtension] || 'woff2';
+        
         // @font-face CSS 생성 (Data URL 사용)
         const fontFaceCSS = `@font-face {
   font-family: "${fontName}";
   src: url("${base64Data}")
-    format("woff2");
+    format("${format}");
   font-style: normal;
 }`;
         
@@ -817,7 +827,8 @@ async function processFontFile(file, fontName) {
             success: true,
             css: fontFaceCSS,
             fontFamily: fontName,
-            base64Data: base64Data
+            base64Data: base64Data,
+            format: format
         };
         
     } catch (error) {
@@ -1335,11 +1346,12 @@ function renderFontAddArea(template) {
         <div class="font-upload-section">
             <h3>폰트 파일 업로드</h3>
             <div class="font-upload-info">
-                <p>woff2 파일을 선택하여 직접 추가할 수 있습니다.</p>
+                <p>폰트 파일을 선택하여 직접 추가할 수 있습니다.</p>
                 <p>파일은 Base64로 변환되어 브라우저 저장소에 저장됩니다. (서버 권한 불필요)</p>
+                <p><strong>지원 형식:</strong> woff2, woff, ttf, otf (woff2 권장 - 가장 작은 파일 크기)</p>
             </div>
             <div class="font-upload-container">
-                <input type="file" id="font-file-input" class="font-file-input" accept=".woff2" style="display: none;">
+                <input type="file" id="font-file-input" class="font-file-input" accept=".woff2,.woff,.ttf,.otf" style="display: none;">
                 <button id="select-font-file-btn" class="select-font-file-btn">
                     <i class="fa-solid fa-folder-open"></i>
                     <span>파일 선택</span>
