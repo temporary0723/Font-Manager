@@ -241,6 +241,49 @@ function applyCustomTagFonts(forceRefresh = false) {
     
     if (tagConfigs.length === 0) return;
     
+    // 강제 새로고침인 경우 모든 처리 마크 제거 및 원본 복원
+    if (forceRefresh) {
+        processedMessages.clear();
+        
+        // 각 메시지를 원본 데이터로 복원
+        document.querySelectorAll('.mes').forEach(mesElement => {
+            const mesId = mesElement.getAttribute('mesid');
+            if (!mesId) return;
+            
+            const messageIndex = parseInt(mesId);
+            const message = chatData[messageIndex];
+            if (!message || !message.mes) return;
+            
+            const mesText = mesElement.querySelector('.mes_text');
+            if (!mesText) return;
+            
+            // 에디터 모드가 아닌 경우에만 복원
+            const hasTextarea = mesText.querySelector('textarea') !== null;
+            const isContentEditable = mesText.contentEditable === 'true' || 
+                                      mesText.querySelector('[contenteditable="true"]') !== null;
+            
+            if (hasTextarea || isContentEditable) return;
+            
+            // data-custom-tag-font가 있는 경우에만 복원
+            if (mesText.querySelector('[data-custom-tag-font]')) {
+                mesText.removeAttribute('data-tag-processed');
+                
+                // 원본 데이터로 복원 (display_text가 있으면 그것을 사용, 없으면 mes 사용)
+                const hasDisplayText = message.extra?.display_text;
+                let originalContent = hasDisplayText ? message.extra.display_text : message.mes;
+                
+                // 줄바꿈을 <br>로 변환
+                originalContent = originalContent.replace(/\n/g, '<br>');
+                
+                // LLM Translator의 details 구조가 있는지 확인
+                const hasLlmTranslatorDetails = originalContent.includes('llm-translator-details');
+                
+                // details 구조가 있으면 그대로 사용, 없으면 일반 HTML로 설정
+                mesText.innerHTML = originalContent;
+            }
+        });
+    }
+    
     // 모든 메시지 요소에 대해 처리
     const messageElements = document.querySelectorAll('.mes');
     messageElements.forEach((messageElement) => {
