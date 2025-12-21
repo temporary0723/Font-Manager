@@ -1973,8 +1973,15 @@ function applyMarkdownCustomFonts() {
     // 새 스타일 엘리먼트 생성
     markdownStyle = document.createElement('style');
     markdownStyle.id = 'font-manager-markdown-custom';
-    document.head.appendChild(markdownStyle);
-    console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨');
+    
+    // fontStyle이 있으면 그 다음에 추가 (더 높은 우선순위)
+    if (fontStyle && fontStyle.nextSibling) {
+        document.head.insertBefore(markdownStyle, fontStyle.nextSibling);
+        console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (fontStyle 다음)');
+    } else {
+        document.head.appendChild(markdownStyle);
+        console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 끝)');
+    }
     
     const fonts = settings?.fonts || [];
     const markdownCss = [];
@@ -1994,8 +2001,8 @@ function applyMarkdownCustomFonts() {
         
         markdownCss.push(`
 /* 대화문 - "따옴표"로 둘러싸인 텍스트 */
-.mes_text q,
-.mes_text blockquote {
+html body .mes_text q,
+html body .mes_text blockquote {
   font-family: "${fontFamily}" !important;
   font-style: normal !important;
 ${fontSizeStyle}}
@@ -2019,7 +2026,7 @@ ${fontSizeStyle}}
         
         markdownCss.push(`
 /* 이탤릭체 - *별표 하나*로 둘러싸인 텍스트 */
-.mes_text em {
+html body .mes_text em {
   font-family: "${fontFamily}" !important;
   font-style: italic !important;
 ${fontSizeStyle}}
@@ -2043,7 +2050,7 @@ ${fontSizeStyle}}
         
         markdownCss.push(`
 /* 밑줄 - __밑줄__로 둘러싸인 텍스트 */
-.mes_text u {
+html body .mes_text u {
   font-family: "${fontFamily}" !important;
   text-decoration: underline !important;
 ${fontSizeStyle}}
@@ -2067,7 +2074,7 @@ ${fontSizeStyle}}
         
         markdownCss.push(`
 /* 강조 - **별표 둘**로 둘러싸인 텍스트 */
-.mes_text strong {
+html body .mes_text strong {
   font-family: "${fontFamily}" !important;
   font-weight: bold !important;
 ${fontSizeStyle}}
@@ -2081,6 +2088,15 @@ ${fontSizeStyle}}
     if (markdownCss.length > 0) {
         markdownStyle.innerHTML = markdownCss.join('\n');
         console.log('[Markdown Custom] CSS 적용 완료:', markdownStyle.innerHTML);
+        
+        // DOM에 실제로 추가되었는지 확인
+        const addedStyle = document.getElementById('font-manager-markdown-custom');
+        if (addedStyle) {
+            console.log('[Markdown Custom] ✅ 스타일이 DOM에 성공적으로 추가됨');
+            console.log('[Markdown Custom] 스타일 위치:', addedStyle.parentNode?.nodeName);
+        } else {
+            console.error('[Markdown Custom] ❌ 스타일이 DOM에 추가되지 않음!');
+        }
     } else {
         console.log('[Markdown Custom] 적용할 CSS 없음');
     }
