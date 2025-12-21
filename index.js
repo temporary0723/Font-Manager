@@ -328,8 +328,11 @@ function applyCustomTagFonts(forceRefresh = false) {
                 // display_text에서 이 텍스트를 포함하는 태그 블록 찾기
                 let matchedTagContent = null;
                 let matchedFontFamily = null;
+                let bestMatchLength = 0; // 가장 긴 매칭을 찾기 위한 변수
                 
                 tagConfigs.forEach(tagConfig => {
+                    if (matchedFontFamily) return; // 이미 매칭됨
+                    
                     console.log(`[Font-Manager DEBUG] span[${idx}] 태그 검사: ${tagConfig.tagName}`);
                     const matches = sourceText.matchAll(tagConfig.regex);
                     for (const match of matches) {
@@ -341,15 +344,28 @@ function applyCustomTagFonts(forceRefresh = false) {
                             tagContent: tagContent.substring(0, 50),
                             tagContentNormalized: tagContentNormalized.substring(0, 50),
                             spanTextNormalized: spanTextNormalized.substring(0, 50),
+                            exactMatch: tagContentNormalized === spanTextNormalized,
                             includes1: tagContentNormalized.includes(spanTextNormalized),
                             includes2: spanTextNormalized.includes(tagContentNormalized)
                         });
                         
-                        if (tagContentNormalized.includes(spanTextNormalized) || spanTextNormalized.includes(tagContentNormalized)) {
+                        // 1순위: 정확히 일치
+                        if (tagContentNormalized === spanTextNormalized) {
                             matchedTagContent = tagContent;
                             matchedFontFamily = tagConfig.fontFamily;
-                            console.log(`[Font-Manager DEBUG] span[${idx}] ✅ 매칭 성공! 폰트: ${matchedFontFamily}`);
+                            console.log(`[Font-Manager DEBUG] span[${idx}] ✅ 정확히 매칭! 폰트: ${matchedFontFamily}`);
                             break;
+                        }
+                        
+                        // 2순위: 포함 관계 (더 긴 매칭 우선)
+                        if (tagContentNormalized.includes(spanTextNormalized) || spanTextNormalized.includes(tagContentNormalized)) {
+                            const matchLength = Math.min(tagContentNormalized.length, spanTextNormalized.length);
+                            if (matchLength > bestMatchLength) {
+                                matchedTagContent = tagContent;
+                                matchedFontFamily = tagConfig.fontFamily;
+                                bestMatchLength = matchLength;
+                                console.log(`[Font-Manager DEBUG] span[${idx}] ✅ 부분 매칭 (길이: ${matchLength})! 폰트: ${matchedFontFamily}`);
+                            }
                         }
                     }
                 });
