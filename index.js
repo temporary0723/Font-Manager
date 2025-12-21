@@ -337,8 +337,9 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const matches = sourceText.matchAll(tagConfig.regex);
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
-                        const tagContentNormalized = tagContent.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim();
-                        const spanTextNormalized = spanText.replace(/\s+/g, ' ').trim();
+                        // 모든 공백/줄바꿈 제거하여 정확한 비교
+                        const tagContentNormalized = tagContent.replace(/\s+/g, '').replace(/\n/g, '').trim();
+                        const spanTextNormalized = spanText.replace(/\s+/g, '').trim();
                         
                         console.log(`[Font-Manager DEBUG] span[${idx}] 비교:`, {
                             tagContent: tagContent.substring(0, 50),
@@ -357,9 +358,10 @@ function applyCustomTagFonts(forceRefresh = false) {
                             break;
                         }
                         
-                        // 2순위: 포함 관계 (더 긴 매칭 우선)
-                        if (tagContentNormalized.includes(spanTextNormalized) || spanTextNormalized.includes(tagContentNormalized)) {
-                            const matchLength = Math.min(tagContentNormalized.length, spanTextNormalized.length);
+                        // 2순위: 태그 내용이 DOM 텍스트를 포함하는 경우만 허용 (더 긴 매칭 우선)
+                        // 반대의 경우 (DOM 텍스트가 태그를 포함)는 허용하지 않음
+                        if (tagContentNormalized.includes(spanTextNormalized)) {
+                            const matchLength = spanTextNormalized.length;
                             if (matchLength > bestMatchLength) {
                                 matchedTagContent = tagContent;
                                 matchedFontFamily = tagConfig.fontFamily;
