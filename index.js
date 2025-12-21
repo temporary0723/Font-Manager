@@ -27,6 +27,7 @@ const defaultSettings = {
     // UI 폰트 조절 값들
     uiFontSize: 14,
     uiFontWeight: 0,
+    uiLineHeight: 1.2,
     // 채팅 폰트 조절 값들
     chatFontSize: 14,
     inputFontSize: 14,
@@ -35,6 +36,7 @@ const defaultSettings = {
     // 테마 연동 규칙들
     themeRules: [],
     // 태그 커스텀 설정
+    customTagEnabled: false,
     customTags: [],
     // 마크다운 커스텀 설정
     markdownCustomEnabled: false,
@@ -63,6 +65,7 @@ let tempLanguageFonts = null;
 // 임시 조절값들
 let tempUiFontSize = null;
 let tempUiFontWeight = null;
+let tempUiLineHeight = null;
 let tempChatFontSize = null;
 let tempInputFontSize = null;
 let tempChatFontWeight = null;
@@ -163,10 +166,12 @@ function initSettings() {
             },
             uiFontSize: 14,
             uiFontWeight: 0,
+            uiLineHeight: 1.2,
             chatFontSize: 14,
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
+            customTagEnabled: false,
             customTags: []
         };
         settings.presets.push(defaultPreset);
@@ -875,6 +880,7 @@ async function openFontManagementPopup() {
             tempLanguageFonts = currentPreset.languageFonts ? { ...currentPreset.languageFonts } : { ...settings.languageFonts };
             tempUiFontSize = currentPreset.uiFontSize ?? settings.uiFontSize;
             tempUiFontWeight = currentPreset.uiFontWeight ?? settings.uiFontWeight;
+            tempUiLineHeight = currentPreset.uiLineHeight ?? settings.uiLineHeight;
             tempChatFontSize = currentPreset.chatFontSize ?? settings.chatFontSize;
             tempInputFontSize = currentPreset.inputFontSize ?? settings.inputFontSize;
             tempChatFontWeight = currentPreset.chatFontWeight ?? settings.chatFontWeight;
@@ -1053,11 +1059,14 @@ function renderUIFontSection(template) {
     // 조절바 값들 설정 (전역 설정 우선, 임시값이 있으면 임시값 사용)
     const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
     const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
+    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight;
     
     template.find('#ui-font-size-slider').val(uiFontSize);
     template.find('#ui-font-size-value').text(uiFontSize + 'px');
     template.find('#ui-font-weight-slider').val(uiFontWeight);
     template.find('#ui-font-weight-value').text(uiFontWeight.toFixed(1) + 'px');
+    template.find('#ui-line-height-slider').val(uiLineHeight);
+    template.find('#ui-line-height-value').text(uiLineHeight.toFixed(1) + 'rem');
 }
 
 // 다국어 폰트 섹션 렌더링
@@ -1107,9 +1116,11 @@ function updateMultiLanguageSectionState(template, enabled) {
     if (enabled) {
         languageSelectors.removeClass('disabled-section');
         languageSelectors.find('select').prop('disabled', false);
+        languageSelectors.find('input').prop('disabled', false);
     } else {
         languageSelectors.addClass('disabled-section');
         languageSelectors.find('select').prop('disabled', true);
+        languageSelectors.find('input').prop('disabled', true);
     }
 }
 
@@ -1233,8 +1244,36 @@ function renderCustomTagSection(template) {
         dropdown.append(`<option value="${font.name}">${font.name}</option>`);
     });
     
+    // 태그 커스텀 활성화 체크박스 설정
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    const customTagEnabled = currentPreset?.customTagEnabled ?? settings.customTagEnabled;
+    
+    template.find('#custom-tag-enabled-toggle').prop('checked', customTagEnabled);
+    
     // 현재 프리셋의 태그 목록 렌더링
     renderCustomTagList(template);
+    
+    // 활성화 상태에 따라 섹션 활성화/비활성화
+    updateCustomTagSectionState(template, customTagEnabled);
+}
+
+// 태그 커스텀 섹션 활성화 상태 업데이트
+function updateCustomTagSectionState(template, enabled) {
+    const customTagContent = template.find('#custom-tag-content');
+    
+    if (enabled) {
+        customTagContent.removeClass('disabled-section');
+        customTagContent.find('input').prop('disabled', false);
+        customTagContent.find('select').prop('disabled', false);
+        customTagContent.find('button').prop('disabled', false);
+    } else {
+        customTagContent.addClass('disabled-section');
+        customTagContent.find('input').prop('disabled', true);
+        customTagContent.find('select').prop('disabled', true);
+        customTagContent.find('button').prop('disabled', true);
+    }
 }
 
 // 태그 커스텀 리스트 렌더링
@@ -1676,6 +1715,7 @@ function updateUIFont() {
     // CSS 변수 설정 (전역 설정 우선)
     const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
     const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
+    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight;
     const chatFontSize = tempChatFontSize ?? settings.chatFontSize;
     const inputFontSize = tempInputFontSize ?? settings.inputFontSize;
     const chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
@@ -1685,6 +1725,7 @@ function updateUIFont() {
 :root {
   --font-manager-ui-size: ${uiFontSize}px;
   --font-manager-ui-weight: ${uiFontWeight}px;
+  --font-manager-ui-line-height: ${uiLineHeight}rem;
   --font-manager-chat-size: ${chatFontSize}px;
   --font-manager-input-size: ${inputFontSize}px;
   --font-manager-chat-weight: ${chatFontWeight}px;
@@ -1727,7 +1768,7 @@ html body textarea:not(#send_textarea) {
   font-family: "${actualFontFamily}", Sans-Serif !important;
   font-size: var(--font-manager-ui-size) !important;
   font-weight: normal !important;
-  line-height: 1.1rem !important;
+  line-height: var(--font-manager-ui-line-height) !important;
   -webkit-text-stroke: var(--font-manager-ui-weight) !important;
 }
 
@@ -1751,6 +1792,7 @@ html body .ui-widget-content .ui-menu-item-wrapper,
 html body textarea:not(#send_textarea) {
   font-family: initial !important;
   font-size: var(--font-manager-ui-size) !important;
+  line-height: var(--font-manager-ui-line-height) !important;
   -webkit-text-stroke: var(--font-manager-ui-weight) !important;
 }
 
@@ -2168,6 +2210,11 @@ function applyTempUIFontWeight(weight) {
     updateUIFont();
 }
 
+function applyTempUILineHeight(height) {
+    tempUiLineHeight = height;
+    updateUIFont();
+}
+
 function applyTempChatFontSize(size) {
     tempChatFontSize = size;
     updateUIFont();
@@ -2480,6 +2527,12 @@ function setupEventListeners(template) {
         applyTempUIFontWeight(weight);
     });
     
+    template.find('#ui-line-height-slider').off('input').on('input', function() {
+        const height = parseFloat($(this).val());
+        template.find('#ui-line-height-value').text(height.toFixed(1) + 'rem');
+        applyTempUILineHeight(height);
+    });
+    
     // 채팅 폰트 조절바 이벤트들
     template.find('#chat-font-size-slider').off('input').on('input', function() {
         const size = parseInt($(this).val());
@@ -2689,6 +2742,32 @@ function setupEventListeners(template) {
         }
     });
     
+    // 태그 커스텀 활성화 토글 이벤트
+    template.find('#custom-tag-enabled-toggle').off('change').on('change', function() {
+        const enabled = $(this).is(':checked');
+        
+        // 현재 프리셋 가져오기
+        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === currentPresetId);
+        
+        if (currentPreset) {
+            currentPreset.customTagEnabled = enabled;
+        }
+        
+        // 전역 설정도 업데이트
+        settings.customTagEnabled = enabled;
+        
+        // 섹션 활성화/비활성화 업데이트
+        updateCustomTagSectionState(template, enabled);
+        
+        // 설정 저장
+        saveSettings();
+        
+        // 폰트 즉시 적용
+        updateUIFont();
+    });
+    
     // 태그 커스텀 추가 버튼 이벤트
     template.find('#add-custom-tag-btn').off('click').on('click', function() {
         const tagName = template.find('#custom-tag-name-input').val().trim();
@@ -2749,8 +2828,8 @@ function setupEventListeners(template) {
         // 설정 저장
         saveSettings();
         
-        // 메시지에 즉시 적용 (강제 새로고침)
-        applyCustomTagFonts(true);
+        // 메시지에 즉시 적용 (폰트 업데이트)
+        updateUIFont();
     });
     
     // 태그 커스텀 삭제 버튼 이벤트
@@ -2761,16 +2840,20 @@ function setupEventListeners(template) {
         // 기본값으로 초기화
         const defaultUIFontSize = 14;
         const defaultUIFontWeight = 0;
+        const defaultUILineHeight = 1.2;
         
         // 임시 값 업데이트
         tempUiFontSize = defaultUIFontSize;
         tempUiFontWeight = defaultUIFontWeight;
+        tempUiLineHeight = defaultUILineHeight;
         
         // UI 업데이트
         template.find('#ui-font-size-slider').val(defaultUIFontSize);
         template.find('#ui-font-size-value').text(defaultUIFontSize + 'px');
         template.find('#ui-font-weight-slider').val(defaultUIFontWeight);
         template.find('#ui-font-weight-value').text(defaultUIFontWeight.toFixed(1) + 'px');
+        template.find('#ui-line-height-slider').val(defaultUILineHeight);
+        template.find('#ui-line-height-value').text(defaultUILineHeight.toFixed(1) + 'rem');
         
         // 실시간 적용
         updateUIFont();
@@ -2998,6 +3081,7 @@ function saveCurrentSettings() {
             currentPreset.languageFonts = tempLanguageFonts ? { ...tempLanguageFonts } : { ...settings.languageFonts };
             currentPreset.uiFontSize = tempUiFontSize ?? settings.uiFontSize;
             currentPreset.uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
+            currentPreset.uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight;
             currentPreset.chatFontSize = tempChatFontSize ?? settings.chatFontSize;
             currentPreset.inputFontSize = tempInputFontSize ?? settings.inputFontSize;
             currentPreset.chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
@@ -3376,6 +3460,7 @@ function exportSettings() {
             currentMessageFont: null,
             uiFontSize: 14,
             uiFontWeight: 0,
+            uiLineHeight: 1.2,
             chatFontSize: 14,
             inputFontSize: 14,
             chatFontWeight: 0,
@@ -3881,10 +3966,12 @@ function resetSettings(template) {
             },
             uiFontSize: 14,
             uiFontWeight: 0,
+            uiLineHeight: 1.2,
             chatFontSize: 14,
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
+            customTagEnabled: false,
             customTags: []
         };
         settings.presets = [defaultPreset];
