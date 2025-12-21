@@ -92,6 +92,21 @@ function loadSettings() {
         
         if (savedData) {
             const parsed = JSON.parse(savedData);
+            
+            // 기존 설정에 uiLineHeight가 없으면 기본값 추가 (마이그레이션)
+            if (parsed.uiLineHeight === undefined) {
+                parsed.uiLineHeight = 1.2;
+            }
+            
+            // 각 프리셋에도 uiLineHeight 추가
+            if (parsed.presets && Array.isArray(parsed.presets)) {
+                parsed.presets.forEach(preset => {
+                    if (preset.uiLineHeight === undefined) {
+                        preset.uiLineHeight = 1.2;
+                    }
+                });
+            }
+            
             return parsed;
         } else {
             return { ...defaultSettings };
@@ -1055,9 +1070,9 @@ function renderUIFontSection(template) {
     }
     
     // 조절바 값들 설정 (전역 설정 우선, 임시값이 있으면 임시값 사용)
-    const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
-    const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
-    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight;
+    const uiFontSize = tempUiFontSize ?? settings.uiFontSize ?? 14;
+    const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight ?? 0;
+    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight ?? 1.2;
     
     template.find('#ui-font-size-slider').val(uiFontSize);
     template.find('#ui-font-size-value').text(uiFontSize + 'px');
@@ -1213,10 +1228,10 @@ function renderMessageFontSection(template) {
     }
     
     // 조절바 값들 설정 (전역 설정 우선, 임시값이 있으면 임시값 사용)
-    const chatFontSize = tempChatFontSize ?? settings.chatFontSize;
-    const inputFontSize = tempInputFontSize ?? settings.inputFontSize;
-    const chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
-    const chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight;
+    const chatFontSize = tempChatFontSize ?? settings.chatFontSize ?? 14;
+    const inputFontSize = tempInputFontSize ?? settings.inputFontSize ?? 14;
+    const chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight ?? 0;
+    const chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight ?? 1.2;
     
     template.find('#chat-font-size-slider').val(chatFontSize);
     template.find('#chat-font-size-value').text(chatFontSize + 'px');
@@ -1681,13 +1696,13 @@ function updateUIFont() {
         : '';
     
     // CSS 변수 설정 (전역 설정 우선)
-    const uiFontSize = tempUiFontSize ?? settings.uiFontSize;
-    const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight;
-    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight;
-    const chatFontSize = tempChatFontSize ?? settings.chatFontSize;
-    const inputFontSize = tempInputFontSize ?? settings.inputFontSize;
-    const chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight;
-    const chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight;
+    const uiFontSize = tempUiFontSize ?? settings.uiFontSize ?? 14;
+    const uiFontWeight = tempUiFontWeight ?? settings.uiFontWeight ?? 0;
+    const uiLineHeight = tempUiLineHeight ?? settings.uiLineHeight ?? 1.2;
+    const chatFontSize = tempChatFontSize ?? settings.chatFontSize ?? 14;
+    const inputFontSize = tempInputFontSize ?? settings.inputFontSize ?? 14;
+    const chatFontWeight = tempChatFontWeight ?? settings.chatFontWeight ?? 0;
+    const chatLineHeight = tempChatLineHeight ?? settings.chatLineHeight ?? 1.2;
     
     cssVariables.push(`
 :root {
