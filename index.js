@@ -208,6 +208,9 @@ function applyCustomTagFonts(forceRefresh = false) {
     const chatData = getChatData();
     if (!chatData) return;
     
+    // 메시지 폰트 사이즈 가져오기 (기본값으로 사용)
+    const defaultFontSize = tempChatFontSize ?? settings.chatFontSize ?? 14;
+    
     // 폰트 정보 미리 가져오기
     const fonts = settings?.fonts || [];
     const tagConfigs = customTags
@@ -227,7 +230,7 @@ function applyCustomTagFonts(forceRefresh = false) {
             return {
                 tagName: tag.tagName,
                 fontFamily: actualFontFamily,
-                fontSize: tag.fontSize, // 폰트 사이즈 추가
+                fontSize: tag.fontSize || defaultFontSize, // 폰트 사이즈 (기본값은 메시지 폰트 사이즈)
                 regex: tagRegex
             };
         });
@@ -350,7 +353,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
                     // 해당 태그의 설정에서 폰트 사이즈 가져오기
                     const matchedConfig = tagConfigs.find(config => config.fontFamily === matchedFontFamily);
-                    const fontSizeStyle = matchedConfig && matchedConfig.fontSize ? ` font-size: ${matchedConfig.fontSize}px !important;` : '';
+                    const fontSize = matchedConfig ? matchedConfig.fontSize : defaultFontSize;
+                    const fontSizeStyle = ` font-size: ${fontSize}px !important;`;
                     span.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
                     hasChanges = true;
                 }
@@ -376,8 +380,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                     hasChanges = true;
                     // 줄바꿈을 <br>로 변환하여 유지
                     const contentWithBreaks = content.replace(/\n/g, '<br>');
-                    // 폰트 사이즈 스타일 추가 (있는 경우에만)
-                    const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
+                    // 폰트 사이즈 스타일 추가 (항상 적용)
+                    const fontSizeStyle = ` font-size: ${tagConfig.fontSize}px !important;`;
                     // 태그 내용을 span으로 감싸서 폰트 적용
                     return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
                 });
@@ -1056,15 +1060,16 @@ function renderCustomTagList(template) {
             const fontName = tag.fontName || '기본 폰트';
             // 태그 이름을 대문자로 표시
             const tagNameUpper = (tag.tagName || '').toUpperCase();
-            // 폰트 사이즈 표시 (있는 경우에만)
-            const fontSizeText = tag.fontSize ? ` (${tag.fontSize}px)` : '';
+            // 폰트 사이즈 값 (기본값은 빈 문자열)
+            const fontSizeValue = tag.fontSize ? tag.fontSize : '';
             listHtml += `
                 <div class="custom-tag-item">
                     <div class="custom-tag-info">
                         <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
                         <span class="custom-tag-arrow">→</span>
-                        <span class="custom-tag-font">${fontName}${fontSizeText}</span>
+                        <span class="custom-tag-font">${fontName}</span>
                     </div>
+                    <input type="number" class="custom-tag-size-field" data-id="${tag.id}" value="${fontSizeValue}" placeholder="사이즈" min="8" max="100" step="0.5" title="폰트 사이즈 (px)">
                     <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
                         <i class="fa-solid fa-trash"></i>
                     </button>
@@ -2080,7 +2085,6 @@ function setupEventListeners(template) {
     template.find('#add-custom-tag-btn').off('click').on('click', function() {
         const tagName = template.find('#custom-tag-name-input').val().trim();
         const fontName = template.find('#custom-tag-font-dropdown').val();
-        const fontSize = template.find('#custom-tag-font-size-input').val().trim();
         
         if (!tagName) {
             alert('태그 이름을 입력해주세요.');
@@ -2112,22 +2116,12 @@ function setupEventListeners(template) {
             return;
         }
         
-        // 폰트 사이즈 유효성 검사 (선택사항)
-        let parsedFontSize = null;
-        if (fontSize) {
-            parsedFontSize = parseFloat(fontSize);
-            if (isNaN(parsedFontSize) || parsedFontSize < 8 || parsedFontSize > 100) {
-                alert('폰트 사이즈는 8에서 100 사이의 숫자여야 합니다.');
-                return;
-            }
-        }
-        
         // 새 태그 추가 (대문자로 저장)
         const newTag = {
             id: generateId(),
             tagName: tagNameUpper,
             fontName: fontName,
-            fontSize: parsedFontSize // null이면 기본 사이즈 사용
+            fontSize: null // 기본값은 null (사이즈 미지정)
         };
         
         if (!currentPreset.customTags) {
@@ -2138,7 +2132,6 @@ function setupEventListeners(template) {
         // 입력 필드 초기화
         template.find('#custom-tag-name-input').val('');
         template.find('#custom-tag-font-dropdown').val('');
-        template.find('#custom-tag-font-size-input').val('');
         
         // 리스트 업데이트
         renderCustomTagList(template);
@@ -2285,6 +2278,13 @@ function setupCustomTagEventListeners(template) {
             deleteCustomTag(template, tagId);
         }
     });
+    
+    // 폰트 사이즈 입력 필드 변경 이벤트
+    template.find('.custom-tag-size-field').off('input change').on('input change', function() {
+        const tagId = $(this).data('id');
+        const fontSize = $(this).val().trim();
+        updateCustomTagFontSize(template, tagId, fontSize);
+    });
 }
 
 // 태그 커스텀 삭제
@@ -2304,6 +2304,39 @@ function deleteCustomTag(template, tagId) {
         renderCustomTagList(template);
         setupCustomTagEventListeners(template);
         
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
+// 태그 커스텀 폰트 사이즈 업데이트
+function updateCustomTagFontSize(template, tagId, fontSize) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        // 빈 값이면 null로 설정 (기본 사이즈 사용)
+        if (!fontSize) {
+            tag.fontSize = null;
+        } else {
+            const parsedSize = parseFloat(fontSize);
+            // 유효한 숫자이고 범위 내인 경우에만 업데이트
+            if (!isNaN(parsedSize) && parsedSize >= 8 && parsedSize <= 100) {
+                tag.fontSize = parsedSize;
+            } else {
+                // 유효하지 않은 값이면 업데이트하지 않음
+                return;
+            }
+        }
+        
+        // 설정 저장
         saveSettings();
         
         // 메시지에 즉시 적용 (강제 새로고침)

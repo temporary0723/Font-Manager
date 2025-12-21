@@ -1069,41 +1069,42 @@
     box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
 }
 
-.custom-tag-font-size-input {
+/* 태그 리스트 아이템의 폰트 사이즈 입력 필드 */
+.custom-tag-size-field {
     flex: 0 0 auto;
-    width: 100px;
-    min-width: 80px;
-    padding: 8px 12px;
+    width: 80px;
+    min-width: 70px;
+    padding: 6px 8px;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 5px;
+    border-radius: 3px;
     background-color: var(--black50a);
     color: var(--SmartThemeBodyColor);
     font-family: inherit;
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.85);
     transition: all 0.2s ease;
     text-align: center;
 }
 
-.custom-tag-font-size-input:focus {
+.custom-tag-size-field:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor);
     box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
 }
 
-.custom-tag-font-size-input::placeholder {
+.custom-tag-size-field::placeholder {
     color: var(--grey30);
     opacity: 0.7;
+    font-size: calc(var(--mainFontSize) * 0.75);
 }
 
 /* 숫자 입력 필드의 스피너 버튼 스타일링 (Chrome, Safari, Edge) */
-.custom-tag-font-size-input::-webkit-inner-spin-button,
-.custom-tag-font-size-input::-webkit-outer-spin-button {
+.custom-tag-size-field::-webkit-inner-spin-button,
+.custom-tag-size-field::-webkit-outer-spin-button {
     opacity: 1;
-    height: 30px;
 }
 
 /* Firefox의 숫자 입력 스피너 스타일링 */
-.custom-tag-font-size-input[type="number"] {
+.custom-tag-size-field[type="number"] {
     -moz-appearance: textfield;
 }
 
@@ -1242,8 +1243,7 @@
     }
     
     .custom-tag-name-input,
-    .custom-tag-font-dropdown,
-    .custom-tag-font-size-input {
+    .custom-tag-font-dropdown {
         min-width: unset;
         width: 100%;
     }
@@ -1254,15 +1254,30 @@
         max-width: none;
     }
     
+    .custom-tag-item {
+        flex-wrap: wrap;
+    }
+    
     .custom-tag-info {
         flex-direction: column;
         align-items: center;
         gap: 5px;
         text-align: center;
+        flex: 1 1 100%;
+    }
+    
+    .custom-tag-size-field {
+        width: 100%;
+        max-width: 150px;
+        margin: 0 auto;
     }
     
     .custom-tag-arrow {
         display: none;
+    }
+    
+    .remove-custom-tag-btn {
+        margin: 0 auto;
     }
 }
 
@@ -1274,6 +1289,12 @@
     .custom-tag-item {
         padding: 8px;
         gap: 8px;
+        flex-direction: column;
+    }
+    
+    .custom-tag-size-field {
+        width: 100%;
+        max-width: none;
     }
     
     .add-custom-tag-btn {
