@@ -775,6 +775,68 @@ async function showFontNamePopup(fontData) {
     return true;
 }
 
+// 폰트 파일 업로드 함수
+async function uploadFontFile(file, fontName) {
+    try {
+        // 파일 유효성 검사
+        const validExtensions = ['.woff2'];
+        const fileName = file.name.toLowerCase();
+        const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!isValidExtension) {
+            throw new Error('지원하지 않는 파일 형식입니다. woff2 파일만 업로드 가능합니다.');
+        }
+        
+        // 파일 크기 체크 (10MB 제한)
+        if (file.size > 10 * 1024 * 1024) {
+            throw new Error('파일 크기가 너무 큽니다. (최대 10MB)');
+        }
+        
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('destination', 'webfonts'); // 저장 위치 지정
+        
+        // 서버에 파일 업로드
+        const response = await fetch('/api/files/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `업로드 실패: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // 업로드된 파일 경로
+        const uploadedPath = result.path || `/webfonts/${file.name}`;
+        
+        // @font-face CSS 생성
+        const fontFaceCSS = `@font-face {
+  font-family: "${fontName}";
+  src: url("${uploadedPath}")
+    format("woff2");
+  font-style: normal;
+}`;
+        
+        return {
+            success: true,
+            css: fontFaceCSS,
+            fontFamily: fontName,
+            path: uploadedPath
+        };
+        
+    } catch (error) {
+        console.error('[Font Manager] 파일 업로드 오류:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
 // 폰트 관리 창 열기
 async function openFontManagementPopup() {
     // 이미 열린 폰트 관리 팝업이 있는지 확인
@@ -1276,6 +1338,31 @@ function renderFontAddArea(template) {
             <textarea id="font-source-textarea" class="font-source-textarea" placeholder="⚠️ @font-face 규칙만 등록 가능합니다&#10;&#10;올바른 형태:&#10;@font-face {&#10;  font-family: 'MyCustomFont';&#10;  src: url('https://example.com/font.woff2') format('woff2');&#10;}&#10;&#10;보안상 다른 CSS 규칙은 허용되지 않습니다."></textarea>
             <div class="font-import-button-container">
                 <button id="import-font-btn" class="import-font-btn">가져오기</button>
+            </div>
+        </div>
+        <div class="font-upload-section">
+            <h3>폰트 파일 업로드</h3>
+            <div class="font-upload-info">
+                <p>woff2 파일을 업로드하여 SillyTavern에 직접 추가할 수 있습니다.</p>
+                <p>업로드된 파일은 <code>public/webfonts</code> 폴더에 저장됩니다.</p>
+            </div>
+            <div class="font-upload-container">
+                <input type="file" id="font-file-input" class="font-file-input" accept=".woff2" style="display: none;">
+                <button id="select-font-file-btn" class="select-font-file-btn">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>파일 선택</span>
+                </button>
+                <span id="selected-file-name" class="selected-file-name">선택된 파일 없음</span>
+                <button id="upload-font-btn" class="upload-font-btn" disabled>
+                    <i class="fa-solid fa-upload"></i>
+                    <span>업로드</span>
+                </button>
+            </div>
+            <div id="upload-progress" class="upload-progress" style="display: none;">
+                <div class="upload-progress-bar">
+                    <div id="upload-progress-fill" class="upload-progress-fill"></div>
+                </div>
+                <span id="upload-progress-text" class="upload-progress-text">업로드 중...</span>
             </div>
         </div>
     `;
@@ -2446,6 +2533,148 @@ function setupEventListeners(template) {
         }
     });
     
+    // 폰트 파일 선택 버튼
+    template.find('#select-font-file-btn').off('click').on('click', function() {
+        template.find('#font-file-input').click();
+    });
+    
+    // 폰트 파일 선택 이벤트
+    template.find('#font-file-input').off('change').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            template.find('#selected-file-name').text(file.name);
+            template.find('#upload-font-btn').prop('disabled', false);
+        } else {
+            template.find('#selected-file-name').text('선택된 파일 없음');
+            template.find('#upload-font-btn').prop('disabled', true);
+        }
+    });
+    
+    // 폰트 파일 업로드 버튼
+    template.find('#upload-font-btn').off('click').on('click', async function() {
+        const fileInput = template.find('#font-file-input')[0];
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('파일을 선택해주세요.');
+            return;
+        }
+        
+        // 먼저 폰트 이름 입력 받기
+        let fontName = '';
+        let nameInputSuccess = false;
+        
+        while (!nameInputSuccess) {
+            const fontNameHtml = `
+                <div class="font-name-popup-content">
+                    <p>폰트 이름을 설정하세요.</p>
+                    <input type="text" id="font-name-input" class="font-name-input" placeholder="폰트 이름을 입력하세요" maxlength="50">
+                </div>
+            `;
+            
+            const nameTemplate = $(fontNameHtml);
+            const popup = new Popup(nameTemplate, POPUP_TYPE.CONFIRM, '폰트 이름 설정', { 
+                okButton: '확인', 
+                cancelButton: '취소'
+            });
+            
+            const result = await popup.show();
+            
+            if (!result) {
+                // 취소된 경우
+                return;
+            }
+            
+            fontName = nameTemplate.find('#font-name-input').val().trim();
+            
+            // 폰트 이름 유효성 검사
+            if (!fontName) {
+                alert('폰트 이름을 입력해주세요.');
+                continue;
+            }
+            
+            // 중복 검사
+            const fonts = settings?.fonts || [];
+            const existingFonts = fonts.map(f => f.name);
+            if (existingFonts.includes(fontName)) {
+                alert('이미 존재하는 폰트 이름입니다.\n다른 이름을 사용해주세요.');
+                continue;
+            }
+            
+            nameInputSuccess = true;
+        }
+        
+        // 업로드 진행 표시
+        const uploadProgress = template.find('#upload-progress');
+        const progressFill = template.find('#upload-progress-fill');
+        const progressText = template.find('#upload-progress-text');
+        
+        uploadProgress.show();
+        progressFill.css('width', '0%');
+        progressText.text('업로드 중...');
+        
+        // 버튼 비활성화
+        template.find('#upload-font-btn').prop('disabled', true);
+        template.find('#select-font-file-btn').prop('disabled', true);
+        
+        // 진행률 애니메이션 (실제 진행률이 아닌 시각적 효과)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            progressFill.css('width', progress + '%');
+        }, 200);
+        
+        // 파일 업로드
+        const uploadResult = await uploadFontFile(file, fontName);
+        
+        clearInterval(progressInterval);
+        
+        if (uploadResult.success) {
+            progressFill.css('width', '100%');
+            progressText.text('업로드 완료!');
+            
+            // 폰트를 설정에 직접 추가
+            const newFont = {
+                id: generateId(),
+                name: fontName,
+                type: 'source',
+                data: uploadResult.css,
+                fontFamily: fontName
+            };
+            
+            settings.fonts.push(newFont);
+            
+            // 폰트 CSS 업데이트
+            updateUIFont();
+            saveSettings();
+            
+            // UI 업데이트
+            renderUIFontSection(template);
+            renderMessageFontSection(template);
+            renderMarkdownCustomSection(template);
+            renderMultiLanguageFontSection(template);
+            renderThemeLinkingSection(template);
+            renderFontList(template);
+            setupEventListeners(template);
+            
+            // 입력 초기화
+            fileInput.value = '';
+            template.find('#selected-file-name').text('선택된 파일 없음');
+            
+            setTimeout(() => {
+                uploadProgress.hide();
+            }, 2000);
+        } else {
+            progressFill.css('width', '0%');
+            uploadProgress.hide();
+            alert('❌ 업로드 실패\n\n' + uploadResult.error);
+        }
+        
+        // 버튼 다시 활성화
+        template.find('#upload-font-btn').prop('disabled', true);
+        template.find('#select-font-file-btn').prop('disabled', false);
+    });
 
     
     // 폰트 삭제 버튼 이벤트
