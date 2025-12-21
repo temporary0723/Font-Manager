@@ -35,7 +35,15 @@ const defaultSettings = {
     // 테마 연동 규칙들
     themeRules: [],
     // 태그 커스텀 설정
-    customTags: []
+    customTags: [],
+    // 마크다운 커스텀 설정
+    markdownCustomEnabled: false,
+    markdownCustom: {
+        dialogue: { fontName: null, fontSize: null }, // q, blockquote
+        italic: { fontName: null, fontSize: null },    // em
+        underline: { fontName: null, fontSize: null }, // u
+        strong: { fontName: null, fontSize: null }     // strong
+    }
 };
 
 // 현재 선택된 프리셋 ID와 임시 폰트들
@@ -129,6 +137,14 @@ function initSettings() {
     settings.chatLineHeight = settings.chatLineHeight ?? 1.2;
     // 태그 커스텀 기본값 보장
     settings.customTags = settings.customTags ?? [];
+    // 마크다운 커스텀 기본값 보장
+    settings.markdownCustomEnabled = settings.markdownCustomEnabled ?? false;
+    settings.markdownCustom = settings.markdownCustom ?? {
+        dialogue: { fontName: null, fontSize: null },
+        italic: { fontName: null, fontSize: null },
+        underline: { fontName: null, fontSize: null },
+        strong: { fontName: null, fontSize: null }
+    };
     
     // 기본 프리셋이 없으면 생성
     if (settings.presets.length === 0) {
@@ -829,6 +845,7 @@ async function openFontManagementPopup() {
     renderToggleSection(template);
     renderUIFontSection(template);
     renderMessageFontSection(template);
+    renderMarkdownCustomSection(template);
     renderCustomTagSection(template);
     renderMultiLanguageFontSection(template);
     renderThemeLinkingSection(template);
@@ -915,6 +932,7 @@ function updateSectionsState(template, enabled) {
     const sections = [
         '#ui-font-section',
         '#message-font-section',
+        '#markdown-custom-section',
         '#custom-tag-section',
         '#multi-language-font-section', 
         '#theme-linking-section',
@@ -1026,6 +1044,73 @@ function updateMultiLanguageSectionState(template, enabled) {
     } else {
         languageSelectors.addClass('disabled-section');
         languageSelectors.find('select').prop('disabled', true);
+    }
+}
+
+// 마크다운 커스텀 섹션 렌더링
+function renderMarkdownCustomSection(template) {
+    const fonts = settings?.fonts || [];
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    // 마크다운 활성화 체크박스 설정
+    const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
+    template.find('#markdown-custom-enabled-toggle').prop('checked', markdownEnabled);
+    
+    // 마크다운 설정 가져오기
+    const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom ?? {
+        dialogue: { fontName: null, fontSize: null },
+        italic: { fontName: null, fontSize: null },
+        underline: { fontName: null, fontSize: null },
+        strong: { fontName: null, fontSize: null }
+    };
+    
+    // 각 마크다운 타입별 설정
+    const types = ['dialogue', 'italic', 'underline', 'strong'];
+    
+    types.forEach(type => {
+        // 폰트 드롭다운 설정
+        const dropdown = template.find(`#markdown-${type}-font-dropdown`);
+        dropdown.empty();
+        dropdown.append('<option value="">폰트 선택 안 함</option>');
+        
+        fonts.forEach(font => {
+            dropdown.append(`<option value="${font.name}">${font.name}</option>`);
+        });
+        
+        // 현재 설정된 폰트 선택
+        const selectedFont = markdownCustom[type]?.fontName;
+        if (selectedFont) {
+            dropdown.val(selectedFont);
+        } else {
+            dropdown.val("");
+        }
+        
+        // 폰트 사이즈 설정
+        const sizeInput = template.find(`#markdown-${type}-size-input`);
+        const fontSize = markdownCustom[type]?.fontSize;
+        if (fontSize) {
+            sizeInput.val(fontSize);
+        } else {
+            sizeInput.val('');
+        }
+    });
+    
+    // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
+    updateMarkdownSectionState(template, markdownEnabled);
+}
+
+// 마크다운 섹션 활성화 상태 업데이트
+function updateMarkdownSectionState(template, enabled) {
+    const markdownSelectors = template.find('#markdown-font-selectors');
+    
+    if (enabled) {
+        markdownSelectors.removeClass('disabled-section');
+        markdownSelectors.find('select, input').prop('disabled', false);
+    } else {
+        markdownSelectors.addClass('disabled-section');
+        markdownSelectors.find('select, input').prop('disabled', true);
     }
 }
 
@@ -1925,6 +2010,7 @@ function setupEventListeners(template) {
             
             renderUIFontSection(template);
             renderMessageFontSection(template);
+            renderMarkdownCustomSection(template);
             renderCustomTagSection(template);
             renderMultiLanguageFontSection(template);
             setupEventListeners(template);
@@ -1991,6 +2077,7 @@ function setupEventListeners(template) {
             renderPresetDropdown(template);
             renderUIFontSection(template);
             renderMessageFontSection(template);
+            renderMarkdownCustomSection(template);
             renderCustomTagSection(template);
             renderMultiLanguageFontSection(template);
             renderThemeLinkingSection(template);
@@ -2108,6 +2195,7 @@ function setupEventListeners(template) {
             template.find('#font-source-textarea').val('');
             renderUIFontSection(template);
             renderMessageFontSection(template);
+            renderMarkdownCustomSection(template);
             renderMultiLanguageFontSection(template);
             renderThemeLinkingSection(template);
             renderFontList(template);
@@ -2563,6 +2651,7 @@ function deletePreset(template, presetId) {
         renderPresetDropdown(template);
         renderUIFontSection(template);
         renderMessageFontSection(template);
+        renderMarkdownCustomSection(template);
         renderMultiLanguageFontSection(template);
         renderThemeLinkingSection(template);
         setupEventListeners(template);
@@ -2587,6 +2676,7 @@ function deleteFont(template, fontId) {
         // UI 업데이트
         renderUIFontSection(template);
         renderMessageFontSection(template);
+        renderMarkdownCustomSection(template);
         renderMultiLanguageFontSection(template);
         renderThemeLinkingSection(template);
         renderFontList(template);
@@ -3042,6 +3132,9 @@ function refreshCurrentPopup(template) {
         }
         if (typeof renderMessageFontSection === 'function') {
             renderMessageFontSection(template);
+        }
+        if (typeof renderMarkdownCustomSection === 'function') {
+            renderMarkdownCustomSection(template);
         }
         if (typeof renderCustomTagSection === 'function') {
             renderCustomTagSection(template);

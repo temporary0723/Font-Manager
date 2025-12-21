@@ -137,6 +137,71 @@
         </div>
     </div>
     
+    <!-- 마크다운 커스텀 섹션 -->
+    <div class="markdown-custom-section" id="markdown-custom-section">
+        <h3>마크다운 커스텀</h3>
+        <div class="markdown-toggle-row">
+            <label class="markdown-toggle-label">
+                <input type="checkbox" id="markdown-custom-enabled-toggle" class="markdown-toggle">
+                <span>마크다운 커스텀 활성화</span>
+            </label>
+        </div>
+        <div class="markdown-font-selectors" id="markdown-font-selectors">
+            <!-- 대화문 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">대화문</label>
+                    <span class="markdown-guide">"따옴표"로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <select id="markdown-dialogue-font-dropdown" class="markdown-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                    <input type="number" id="markdown-dialogue-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                </div>
+            </div>
+            <!-- 이탤릭체 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">이탤릭체</label>
+                    <span class="markdown-guide">*별표 하나*로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <select id="markdown-italic-font-dropdown" class="markdown-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                    <input type="number" id="markdown-italic-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                </div>
+            </div>
+            <!-- 밑줄 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">밑줄</label>
+                    <span class="markdown-guide">__밑줄__로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <select id="markdown-underline-font-dropdown" class="markdown-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                    <input type="number" id="markdown-underline-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                </div>
+            </div>
+            <!-- 강조 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">강조</label>
+                    <span class="markdown-guide">**별표 둘**로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <select id="markdown-strong-font-dropdown" class="markdown-font-dropdown">
+                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                    </select>
+                    <input type="number" id="markdown-strong-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 다국어 폰트 섹션 -->
     <div class="multi-language-font-section" id="multi-language-font-section">
         <h3>다국어 폰트 설정</h3>

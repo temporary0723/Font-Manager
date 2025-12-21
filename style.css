@@ -1287,6 +1287,181 @@
     }
 }
 
+/* 마크다운 커스텀 섹션 */
+.markdown-custom-section {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--black30a);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.markdown-custom-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+/* 마크다운 활성화 토글 */
+.markdown-toggle-row {
+    margin-bottom: 15px;
+}
+
+.markdown-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--SmartThemeBodyColor);
+    font-size: var(--mainFontSize);
+    user-select: none;
+}
+
+.markdown-toggle-label span {
+    color: var(--SmartThemeBodyColor);
+}
+
+.markdown-toggle {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* 마크다운 폰트 선택기들 */
+.markdown-font-selectors {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.markdown-font-selectors.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.markdown-font-group {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 10px;
+    background-color: var(--black30a);
+}
+
+.markdown-font-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.markdown-label {
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.95);
+    font-weight: 600;
+    min-width: 70px;
+}
+
+.markdown-guide {
+    color: var(--SmartThemeQuoteColor);
+    font-size: calc(var(--mainFontSize) * 0.85);
+    font-style: italic;
+    opacity: 0.8;
+    flex: 1;
+    text-align: right;
+}
+
+.markdown-font-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.markdown-font-dropdown {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    min-width: 0;
+}
+
+.markdown-font-dropdown:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.markdown-font-dropdown:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.markdown-size-input {
+    width: 70px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.markdown-size-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.markdown-size-input:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.markdown-size-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
+/* 마크다운 섹션 반응형 디자인 */
+@media (max-width: 600px) {
+    .markdown-font-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .markdown-guide {
+        text-align: left;
+    }
+    
+    .markdown-font-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .markdown-font-dropdown,
+    .markdown-size-input {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .markdown-font-group {
+        padding: 8px;
+    }
+    
+    .markdown-font-selectors {
+        gap: 10px;
+    }
+}
+
 /* 다국어 폰트 섹션 */
 .multi-language-font-section {
     border: 1px solid var(--SmartThemeBorderColor);
