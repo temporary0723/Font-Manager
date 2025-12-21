@@ -228,16 +228,36 @@ const tagRegexCache = new Map();
 // 처리된 메시지 추적 (이미 처리된 메시지는 건너뛰기)
 const processedMessages = new Set();
 
+// Observer 인스턴스 저장 (disconnect/reconnect용)
+let customTagObserverInstance = null;
+
 // 메시지에 태그 커스텀 폰트 적용
 function applyCustomTagFonts(forceRefresh = false) {
     if (!settings.enabled) return;
+    
+    // Observer를 일시적으로 비활성화하여 무한 루프 방지
+    if (customTagObserverInstance) {
+        customTagObserverInstance.disconnect();
+    }
     
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
     const customTags = currentPreset?.customTags ?? settings?.customTags ?? [];
     
-    if (customTags.length === 0) return;
+    if (customTags.length === 0) {
+        // Observer 다시 연결
+        if (customTagObserverInstance) {
+            const chatContainer = document.getElementById('chat');
+            if (chatContainer) {
+                customTagObserverInstance.observe(chatContainer, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }
+        return;
+    }
     
     // chatData 한 번만 가져오기
     const chatData = getChatData();
@@ -419,11 +439,18 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 // 매칭된 태그가 있으면 original_text와 translated_text 모두에 폰트 적용
                 if (matchedFontFamily) {
-                    // original_text에 폰트 적용
-                    const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
-                    const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
-                    span.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
-                    hasChanges = true;
+                    // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
+                    if (!span.querySelector('[data-custom-tag-font]')) {
+                        const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
+                        const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
+                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
+                        
+                        // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
+                        if (span.innerHTML.trim() !== newHTML.trim()) {
+                            span.innerHTML = newHTML;
+                            hasChanges = true;
+                        }
+                    }
                     
                     // 같은 details 안의 translated_text에도 폰트 적용
                     const detailsElement = span.closest('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details');
@@ -431,7 +458,12 @@ function applyCustomTagFonts(forceRefresh = false) {
                         const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
                             const translatedContent = translatedTextSpan.innerHTML.replace(/\n/g, '<br>');
-                            translatedTextSpan.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${translatedContent}</span>`;
+                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${translatedContent}</span>`;
+                            
+                            // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
+                            if (translatedTextSpan.innerHTML.trim() !== newTranslatedHTML.trim()) {
+                                translatedTextSpan.innerHTML = newTranslatedHTML;
+                            }
                         }
                     }
                 }
@@ -467,7 +499,15 @@ function applyCustomTagFonts(forceRefresh = false) {
             if (hasChanges) {
                 // 나머지 줄바꿈도 <br>로 변환
                 processedContent = processedContent.replace(/\n/g, '<br>');
-                messageContent.innerHTML = processedContent;
+                
+                // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
+                // 이미 올바르게 처리된 경우 innerHTML 변경을 피해 커서 초기화 방지
+                const currentHTML = messageContent.innerHTML.trim();
+                const newHTML = processedContent.trim();
+                
+                if (currentHTML !== newHTML) {
+                    messageContent.innerHTML = processedContent;
+                }
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
             } else {
@@ -477,6 +517,17 @@ function applyCustomTagFonts(forceRefresh = false) {
             }
         }
     });
+    
+    // Observer를 다시 연결
+    if (customTagObserverInstance) {
+        const chatContainer = document.getElementById('chat');
+        if (chatContainer) {
+            customTagObserverInstance.observe(chatContainer, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }
 }
 
 // MutationObserver로 새 메시지 렌더링 시 태그 폰트 자동 적용
@@ -666,6 +717,9 @@ function setupCustomTagObserver() {
             applyWithDebounce(shouldCheckEditorClose);
         }
     });
+    
+    // Observer 인스턴스를 전역 변수에 저장
+    customTagObserverInstance = observer;
     
     const chatContainer = document.querySelector('#chat');
     if (chatContainer) {
