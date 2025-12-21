@@ -297,11 +297,20 @@ function applyCustomTagFonts(forceRefresh = false) {
             // display_text에서 태그가 있는 부분 찾기
             let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
             console.log('[Font-Manager DEBUG] sourceText:', sourceText.substring(0, 200) + '...');
+            console.log('[Font-Manager DEBUG] messageContent.innerHTML:', messageContent.innerHTML.substring(0, 300) + '...');
             
             // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
             // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사)
             const textSpans = messageContent.querySelectorAll('.translated_text, .original_text, .custom-translated_text, .custom-original_text, .custom_translated_text, .custom_original_text');
             console.log('[Font-Manager DEBUG] textSpans 개수:', textSpans.length);
+            
+            // 디버깅: details 요소 확인
+            const detailsElements = messageContent.querySelectorAll('details');
+            console.log('[Font-Manager DEBUG] details 요소 개수:', detailsElements.length);
+            detailsElements.forEach((details, idx) => {
+                console.log(`[Font-Manager DEBUG] details[${idx}] 클래스:`, details.className);
+                console.log(`[Font-Manager DEBUG] details[${idx}] innerHTML:`, details.innerHTML.substring(0, 100));
+            });
             
             textSpans.forEach((span, idx) => {
                 console.log(`[Font-Manager DEBUG] span[${idx}] 처리 시작`);
