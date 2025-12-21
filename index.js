@@ -280,8 +280,8 @@ function applyCustomTagFonts(forceRefresh = false) {
         // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
         
         // LLM Translator의 접기 모드 구조 확인
-        // 1. DOM에서 확인
-        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details') !== null;
+        // 1. DOM에서 확인 (SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음)
+        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details') !== null;
         // 2. display_text에 details HTML이 있는지 확인
         const displayTextHasDetails = hasDisplayText && 
                                      message.extra.display_text && 
@@ -299,7 +299,8 @@ function applyCustomTagFonts(forceRefresh = false) {
             console.log('[Font-Manager DEBUG] sourceText:', sourceText.substring(0, 200) + '...');
             
             // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
-            const textSpans = messageContent.querySelectorAll('.translated_text, .original_text');
+            // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사)
+            const textSpans = messageContent.querySelectorAll('.translated_text, .original_text, .custom-translated_text, .custom-original_text, .custom_translated_text, .custom_original_text');
             console.log('[Font-Manager DEBUG] textSpans 개수:', textSpans.length);
             
             textSpans.forEach((span, idx) => {
