@@ -279,8 +279,15 @@ function applyCustomTagFonts(forceRefresh = false) {
         // display_text가 있으면 번역문에서, 없으면 원문에서 태그 찾기
         // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
         
-        // LLM Translator의 접기 모드 구조 확인 (DOM 기준)
-        const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details') !== null;
+        // LLM Translator의 접기 모드 구조 확인
+        // 1. DOM에서 확인
+        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details') !== null;
+        // 2. display_text에 details HTML이 있는지 확인
+        const displayTextHasDetails = hasDisplayText && 
+                                     message.extra.display_text && 
+                                     message.extra.display_text.includes('llm-translator-details');
+        
+        const hasLlmTranslatorDetails = hasLlmTranslatorDetailsInDom || displayTextHasDetails;
         
         if (hasLlmTranslatorDetails) {
             // LLM Translator의 details 구조가 이미 DOM에 있는 경우: 각 span을 개별 처리
