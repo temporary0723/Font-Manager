@@ -193,7 +193,7 @@ function getChatData() {
 const tagRegexCache = new Map();
 
 // 처리된 메시지 추적 (이미 처리된 메시지는 건너뛰기)
-const processedMessages = new WeakSet();
+const processedMessages = new Set();
 
 // 메시지에 태그 커스텀 폰트 적용
 function applyCustomTagFonts(forceRefresh = false) {
