@@ -280,31 +280,75 @@ function applyCustomTagFonts(forceRefresh = false) {
         // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
         let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
         
-        let processedContent = sourceText;
-        let hasChanges = false;
+        // LLM Translator의 접기 모드 구조 확인
+        const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details') !== null;
         
-        // 모든 태그에 대해 한 번에 처리
-        tagConfigs.forEach(tagConfig => {
-            processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
-                hasChanges = true;
-                // 줄바꿈을 <br>로 변환하여 유지
-                const contentWithBreaks = content.replace(/\n/g, '<br>');
-                // 태그 내용을 span으로 감싸서 폰트 적용
-                return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
+        if (hasLlmTranslatorDetails) {
+            // LLM Translator의 details 구조가 있는 경우: 각 span을 개별 처리
+            let hasChanges = false;
+            
+            // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
+            const textSpans = messageContent.querySelectorAll('.translated_text, .original_text');
+            
+            textSpans.forEach(span => {
+                // 이미 Font Manager span이 있는지 확인
+                if (span.querySelector('[data-custom-tag-font]')) {
+                    return; // 이미 처리됨
+                }
+                
+                let spanContent = span.innerHTML;
+                let spanChanged = false;
+                
+                tagConfigs.forEach(tagConfig => {
+                    const newContent = spanContent.replace(tagConfig.regex, (match, content) => {
+                        spanChanged = true;
+                        hasChanges = true;
+                        const contentWithBreaks = content.replace(/\n/g, '<br>');
+                        return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
+                    });
+                    
+                    if (spanChanged) {
+                        spanContent = newContent;
+                    }
+                });
+                
+                if (spanChanged) {
+                    span.innerHTML = spanContent;
+                }
             });
-        });
-        
-        // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
-        if (hasChanges) {
-            // 나머지 줄바꿈도 <br>로 변환
-            processedContent = processedContent.replace(/\n/g, '<br>');
-            messageContent.innerHTML = processedContent;
-            messageContent.setAttribute('data-tag-processed', 'true');
-            processedMessages.add(messageElement);
+            
+            if (hasChanges) {
+                messageContent.setAttribute('data-tag-processed', 'true');
+                processedMessages.add(messageElement);
+            }
         } else {
-            // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
-            messageContent.setAttribute('data-tag-processed', 'true');
-            processedMessages.add(messageElement);
+            // 일반 모드 또는 사용 안 함: 기존 로직
+            let processedContent = sourceText;
+            let hasChanges = false;
+            
+            // 모든 태그에 대해 한 번에 처리
+            tagConfigs.forEach(tagConfig => {
+                processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
+                    hasChanges = true;
+                    // 줄바꿈을 <br>로 변환하여 유지
+                    const contentWithBreaks = content.replace(/\n/g, '<br>');
+                    // 태그 내용을 span으로 감싸서 폰트 적용
+                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
+                });
+            });
+            
+            // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
+            if (hasChanges) {
+                // 나머지 줄바꿈도 <br>로 변환
+                processedContent = processedContent.replace(/\n/g, '<br>');
+                messageContent.innerHTML = processedContent;
+                messageContent.setAttribute('data-tag-processed', 'true');
+                processedMessages.add(messageElement);
+            } else {
+                // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
+                messageContent.setAttribute('data-tag-processed', 'true');
+                processedMessages.add(messageElement);
+            }
         }
     });
 }
