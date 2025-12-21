@@ -1069,6 +1069,44 @@
     box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
 }
 
+.custom-tag-font-size-input {
+    flex: 0 0 auto;
+    width: 100px;
+    min-width: 80px;
+    padding: 8px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.custom-tag-font-size-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.custom-tag-font-size-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
+/* 숫자 입력 필드의 스피너 버튼 스타일링 (Chrome, Safari, Edge) */
+.custom-tag-font-size-input::-webkit-inner-spin-button,
+.custom-tag-font-size-input::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 30px;
+}
+
+/* Firefox의 숫자 입력 스피너 스타일링 */
+.custom-tag-font-size-input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 .add-custom-tag-btn {
     display: flex;
     align-items: center;
@@ -1204,8 +1242,10 @@
     }
     
     .custom-tag-name-input,
-    .custom-tag-font-dropdown {
+    .custom-tag-font-dropdown,
+    .custom-tag-font-size-input {
         min-width: unset;
+        width: 100%;
     }
     
     .add-custom-tag-btn {
