@@ -1376,6 +1376,31 @@
     font-style: italic;
 }
 
+.custom-tag-font-select {
+    flex: 1;
+    min-width: 120px;
+    padding: 6px 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.custom-tag-font-select:hover {
+    border-color: var(--SmartThemeQuoteColor);
+    background-color: var(--black30a);
+}
+
+.custom-tag-font-select:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
 .remove-custom-tag-btn {
     padding: 6px 8px;
     background-color: transparent;

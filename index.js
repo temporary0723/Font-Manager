@@ -1411,6 +1411,7 @@ function renderCustomTagList(template) {
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
     const customTags = currentPreset?.customTags ?? settings?.customTags ?? [];
+    const fonts = settings?.fonts || [];
     const listArea = template.find('#custom-tag-list');
     
     if (customTags.length === 0) {
@@ -1427,12 +1428,22 @@ function renderCustomTagList(template) {
             const tagNameUpper = (tag.tagName || '').toUpperCase();
             // 폰트 사이즈 기본값 (없으면 현재 메시지 폰트 크기)
             const fontSize = tag.fontSize || (currentPreset?.chatFontSize ?? settings?.chatFontSize ?? 14);
+            
+            // 폰트 드롭다운 옵션 생성
+            let fontOptions = '<option value="">기본 폰트</option>';
+            fonts.forEach(font => {
+                const selected = font.name === tag.fontName ? 'selected' : '';
+                fontOptions += `<option value="${font.name}" ${selected}>${font.name}</option>`;
+            });
+            
             listHtml += `
                 <div class="custom-tag-item">
                     <div class="custom-tag-info">
                         <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
                         <span class="custom-tag-arrow">→</span>
-                        <span class="custom-tag-font">${fontName}</span>
+                        <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택">
+                            ${fontOptions}
+                        </select>
                     </div>
                     <div class="custom-tag-controls">
                         <label class="custom-tag-size-label">크기:</label>
@@ -3102,6 +3113,14 @@ function setupCustomTagEventListeners(template) {
         }
     });
     
+    // 태그 폰트 드롭다운 변경 이벤트
+    template.find('.custom-tag-font-select').off('change').on('change', function() {
+        const tagId = $(this).data('id');
+        const newFontName = $(this).val();
+        
+        updateCustomTagFont(template, tagId, newFontName);
+    });
+    
     // 폰트 사이즈 입력 필드 이벤트
     template.find('.custom-tag-size-input').off('change').on('change', function() {
         const tagId = $(this).data('id');
@@ -3160,6 +3179,25 @@ function updateCustomTagFontSize(template, tagId, fontSize) {
     
     if (tag) {
         tag.fontSize = fontSize;
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
+// 태그 커스텀 폰트 변경
+function updateCustomTagFont(template, tagId, fontName) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        tag.fontName = fontName || null;
         saveSettings();
         
         // 메시지에 즉시 적용 (강제 새로고침)
