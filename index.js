@@ -439,10 +439,12 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 // 매칭된 태그가 있으면 original_text와 translated_text 모두에 폰트 적용
                 if (matchedFontFamily) {
+                    // 폰트 스타일 미리 생성 (original과 translated에서 공통 사용)
+                    const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
+                    
                     // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
                     if (!span.querySelector('[data-custom-tag-font]')) {
                         const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
-                        const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
                         const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
                         
                         // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
