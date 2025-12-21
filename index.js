@@ -36,6 +36,7 @@ const defaultSettings = {
     // 테마 연동 규칙들
     themeRules: [],
     // 태그 커스텀 설정
+    customTagEnabled: false,
     customTags: [],
     // 마크다운 커스텀 설정
     markdownCustomEnabled: false,
@@ -154,6 +155,7 @@ function initSettings() {
     settings.chatFontWeight = settings.chatFontWeight ?? 0;
     settings.chatLineHeight = settings.chatLineHeight ?? 1.2;
     // 태그 커스텀 기본값 보장
+    settings.customTagEnabled = settings.customTagEnabled ?? false;
     settings.customTags = settings.customTags ?? [];
     // 마크다운 커스텀 기본값 보장
     settings.markdownCustomEnabled = settings.markdownCustomEnabled ?? false;
@@ -185,6 +187,7 @@ function initSettings() {
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
+            customTagEnabled: false,
             customTags: []
         };
         settings.presets.push(defaultPreset);
@@ -243,6 +246,23 @@ function applyCustomTagFonts(forceRefresh = false) {
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    // 태그 커스텀이 비활성화되어 있으면 종료
+    const customTagEnabled = currentPreset?.customTagEnabled ?? settings?.customTagEnabled ?? false;
+    if (!customTagEnabled) {
+        // Observer 다시 연결
+        if (customTagObserverInstance) {
+            const chatContainer = document.getElementById('chat');
+            if (chatContainer) {
+                customTagObserverInstance.observe(chatContainer, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }
+        return;
+    }
+    
     const customTags = currentPreset?.customTags ?? settings?.customTags ?? [];
     
     if (customTags.length === 0) {
@@ -1311,8 +1331,30 @@ function renderCustomTagSection(template) {
         dropdown.append(`<option value="${font.name}">${font.name}</option>`);
     });
     
+    // 태그 커스텀 활성화 체크박스 설정
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    const customTagEnabled = currentPreset?.customTagEnabled ?? settings.customTagEnabled;
+    template.find('#custom-tag-enabled-toggle').prop('checked', customTagEnabled);
+    
+    // 활성화 상태에 따라 UI 업데이트
+    updateCustomTagSectionState(template, customTagEnabled);
+    
     // 현재 프리셋의 태그 목록 렌더링
     renderCustomTagList(template);
+}
+
+// 태그 커스텀 섹션 활성화/비활성화 상태 업데이트
+function updateCustomTagSectionState(template, enabled) {
+    const contentArea = template.find('#custom-tag-content');
+    if (enabled) {
+        contentArea.removeClass('disabled-content');
+        contentArea.find('input, select, button').prop('disabled', false);
+    } else {
+        contentArea.addClass('disabled-content');
+        contentArea.find('input, select, button').prop('disabled', true);
+    }
 }
 
 // 태그 커스텀 리스트 렌더링
@@ -2425,6 +2467,25 @@ function setupEventListeners(template) {
             tempMessageFont = null;
             updateUIFont();
         }
+    });
+    
+    // 태그 커스텀 활성화 토글 이벤트
+    template.find('#custom-tag-enabled-toggle').off('change').on('change', function() {
+        const enabled = $(this).prop('checked');
+        
+        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === currentPresetId);
+        
+        if (currentPreset) {
+            currentPreset.customTagEnabled = enabled;
+        } else {
+            settings.customTagEnabled = enabled;
+        }
+        
+        updateCustomTagSectionState(template, enabled);
+        saveSettings();
+        applyCustomTagFonts(true); // 태그 커스텀 설정 변경 시 폰트 업데이트
     });
     
     // 마크다운 커스텀 활성화 토글 이벤트
@@ -3984,6 +4045,7 @@ function resetSettings(template) {
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
+            customTagEnabled: false,
             customTags: []
         };
         settings.presets = [defaultPreset];

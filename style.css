@@ -1121,6 +1121,37 @@
     font-size: calc(var(--mainFontSize) * 1.1);
 }
 
+/* 태그 커스텀 토글 */
+.custom-tag-toggle-row {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+.custom-tag-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: calc(var(--mainFontSize) * 0.95);
+    color: var(--SmartThemeBodyColor);
+}
+
+.custom-tag-toggle {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.custom-tag-content {
+    transition: opacity 0.3s ease;
+}
+
+.custom-tag-content.disabled-content {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .custom-tag-guide {
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
