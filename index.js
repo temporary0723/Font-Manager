@@ -998,8 +998,8 @@ function updateSectionsState(template, enabled) {
     const sections = [
         '#ui-font-section',
         '#message-font-section',
-        '#markdown-custom-section',
-        '#custom-tag-section',
+        '#markdown-custom-section',  // 마크다운 커스텀 (태그 커스텀보다 위)
+        '#custom-tag-section',        // 태그 커스텀
         '#multi-language-font-section', 
         '#theme-linking-section',
         '#font-add-area',
