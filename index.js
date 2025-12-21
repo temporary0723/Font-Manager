@@ -266,48 +266,45 @@ function applyCustomTagFonts(forceRefresh = false) {
         return;
     }
     
-    // 강제 새로고침인 경우 모든 처리 마크 제거 및 원본 복원
+    // 강제 새로고침인 경우 모든 처리 마크 제거 및 기존 태그 폰트 스타일 제거
     if (forceRefresh) {
         console.log('[Font-Manager] 강제 새로고침 시작');
         processedMessages.clear();
         
         let restoredCount = 0;
         
-        // 각 메시지를 원본 데이터로 복원
+        // 각 메시지에서 data-custom-tag-font span만 제거 (unwrap)
         document.querySelectorAll('.mes').forEach(mesElement => {
             const mesId = mesElement.getAttribute('mesid');
             if (!mesId) return;
             
-            const messageIndex = parseInt(mesId);
-            const message = chatData[messageIndex];
-            if (!message || !message.mes) return;
-            
             const mesText = mesElement.querySelector('.mes_text');
             if (!mesText) return;
             
-            // 에디터 모드가 아닌 경우에만 복원
+            // 에디터 모드가 아닌 경우에만 처리
             const hasTextarea = mesText.querySelector('textarea') !== null;
             const isContentEditable = mesText.contentEditable === 'true' || 
                                       mesText.querySelector('[contenteditable="true"]') !== null;
             
             if (hasTextarea || isContentEditable) return;
             
-            // data-custom-tag-font가 있는 경우에만 복원
-            if (mesText.querySelector('[data-custom-tag-font]')) {
+            // data-custom-tag-font span을 unwrap (내용만 남기고 span 제거)
+            const tagFontSpans = mesText.querySelectorAll('[data-custom-tag-font]');
+            if (tagFontSpans.length > 0) {
+                tagFontSpans.forEach(span => {
+                    const parent = span.parentNode;
+                    if (parent) {
+                        // span의 모든 자식 노드를 부모에게 이동
+                        const fragment = document.createDocumentFragment();
+                        while (span.firstChild) {
+                            fragment.appendChild(span.firstChild);
+                        }
+                        // span을 fragment로 교체
+                        parent.replaceChild(fragment, span);
+                    }
+                });
+                
                 mesText.removeAttribute('data-tag-processed');
-                
-                // 원본 데이터로 복원 (display_text가 있으면 그것을 사용, 없으면 mes 사용)
-                const hasDisplayText = message.extra?.display_text;
-                let originalContent = hasDisplayText ? message.extra.display_text : message.mes;
-                
-                // 줄바꿈을 <br>로 변환
-                originalContent = originalContent.replace(/\n/g, '<br>');
-                
-                // LLM Translator의 details 구조가 있는지 확인
-                const hasLlmTranslatorDetails = originalContent.includes('llm-translator-details');
-                
-                // details 구조가 있으면 그대로 사용, 없으면 일반 HTML로 설정
-                mesText.innerHTML = originalContent;
                 restoredCount++;
             }
         });
@@ -369,7 +366,7 @@ function applyCustomTagFonts(forceRefresh = false) {
         
         // LLM Translator의 접기 모드 구조 확인
         // 1. DOM에서 확인 (SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음)
-        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details') !== null;
+        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details') !== null;
         // 2. display_text에 details HTML이 있는지 확인
         const displayTextHasDetails = hasDisplayText && 
                                      message.extra.display_text && 
@@ -378,17 +375,17 @@ function applyCustomTagFonts(forceRefresh = false) {
         const hasLlmTranslatorDetails = hasLlmTranslatorDetailsInDom || displayTextHasDetails;
         
         if (hasLlmTranslatorDetails) {
-            // LLM Translator의 details 구조: display_text에서 태그를 찾아 DOM에 적용
+            // LLM Translator의 details 구조: 원본 메시지(mes)에서 태그를 찾아 DOM에 적용
             let hasChanges = false;
             
-            // display_text에서 태그가 있는 부분 찾기
-            let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
+            // 원본 메시지에서 태그 찾기 (display_text는 이미 렌더링된 HTML이므로 사용하지 않음)
+            let sourceText = message.mes;
             
-            // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
-            // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사)
-            const textSpans = messageContent.querySelectorAll('.translated_text, .original_text, .custom-translated_text, .custom-original_text, .custom_translated_text, .custom_original_text');
+            // .original_text만 처리 (원본 메시지와 매칭 가능)
+            // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사, _ 언더스코어 변형)
+            const originalTextSpans = messageContent.querySelectorAll('.original_text, .custom-original_text, .custom_original_text, .custom-original-text');
             
-            textSpans.forEach((span, idx) => {
+            originalTextSpans.forEach((span, idx) => {
                 // 이미 Font Manager span이 있는지 확인
                 if (span.querySelector('[data-custom-tag-font]')) {
                     return; // 이미 처리됨
@@ -396,6 +393,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 // DOM에서 텍스트만 추출 (sanitized)
                 const spanText = span.textContent.trim();
+                
+                console.log(`[Font-Manager] original_text 처리 중 (${idx}):`, spanText.substring(0, 50));
                 
                 // display_text에서 이 텍스트를 포함하는 태그 블록 찾기
                 let matchedTagContent = null;
@@ -419,6 +418,11 @@ function applyCustomTagFonts(forceRefresh = false) {
                             matchedTagContent = tagContent;
                             matchedFontFamily = tagConfig.fontFamily;
                             matchedFontSize = tagConfig.fontSize;
+                            console.log(`[Font-Manager] 태그 매칭 성공 (정확 일치):`, {
+                                태그: tagConfig.tagName,
+                                DOM텍스트: spanText.substring(0, 30),
+                                태그내용: tagContent.substring(0, 30)
+                            });
                             break;
                         }
                         
@@ -431,17 +435,39 @@ function applyCustomTagFonts(forceRefresh = false) {
                                 matchedFontFamily = tagConfig.fontFamily;
                                 matchedFontSize = tagConfig.fontSize;
                                 bestMatchLength = matchLength;
+                                console.log(`[Font-Manager] 태그 매칭 성공 (부분 일치):`, {
+                                    태그: tagConfig.tagName,
+                                    DOM텍스트: spanText.substring(0, 30),
+                                    태그내용: tagContent.substring(0, 30)
+                                });
                             }
                         }
                     }
                 });
                 
-                // 매칭된 태그가 있으면 폰트 적용
+                // 매칭된 태그가 있으면 original_text와 translated_text 모두에 폰트 적용
                 if (matchedFontFamily) {
+                    console.log(`[Font-Manager] 폰트 적용 시작:`, {
+                        폰트: matchedFontFamily,
+                        크기: matchedFontSize
+                    });
+                    
+                    // original_text에 폰트 적용
                     const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
                     const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
                     span.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
                     hasChanges = true;
+                    
+                    // 같은 details 안의 translated_text에도 폰트 적용
+                    const detailsElement = span.closest('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details');
+                    if (detailsElement) {
+                        const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
+                        if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
+                            const translatedContent = translatedTextSpan.innerHTML.replace(/\n/g, '<br>');
+                            translatedTextSpan.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${translatedContent}</span>`;
+                            console.log('[Font-Manager] translated_text에도 폰트 적용됨');
+                        }
+                    }
                 }
             });
             
