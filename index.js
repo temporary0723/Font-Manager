@@ -236,9 +236,7 @@ let customTagObserverInstance = null;
 
 // 모든 태그 커스텀 폰트 제거
 function removeAllCustomTagFonts() {
-    const chatData = getChatData();
-    
-    // 모든 메시지에서 태그 폰트 span 제거하고 원본으로 복원
+    // 모든 메시지에서 태그 폰트 span만 제거 (구조는 유지)
     document.querySelectorAll('.mes').forEach(mesElement => {
         const mesId = mesElement.getAttribute('mesid');
         if (!mesId) return;
@@ -258,19 +256,24 @@ function removeAllCustomTagFonts() {
         // data-custom-tag-font가 있는 경우에만 처리
         const tagFontSpans = mesText.querySelectorAll('[data-custom-tag-font]');
         if (tagFontSpans.length > 0) {
-            // chatData에서 원본 메시지 가져오기
-            if (chatData) {
-                const messageIndex = parseInt(mesId);
-                const message = chatData[messageIndex];
-                if (message) {
-                    // 번역문이 있으면 display_text, 없으면 mes 사용
-                    const sourceText = message.extra?.display_text || message.mes;
+            tagFontSpans.forEach(span => {
+                const parent = span.parentNode;
+                if (parent) {
+                    // span의 내용만 추출 (텍스트 유지)
+                    const textContent = span.innerHTML;
                     
-                    // 줄바꿈을 <br>로 변환하여 원본 메시지 복원
-                    const restoredHTML = sourceText.replace(/\n/g, '<br>');
-                    mesText.innerHTML = restoredHTML;
+                    // span을 텍스트로 교체 (unwrap)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = textContent;
+                    
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+                    
+                    parent.replaceChild(fragment, span);
                 }
-            }
+            });
             
             // 처리 마크 제거
             mesText.removeAttribute('data-tag-processed');
