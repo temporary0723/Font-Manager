@@ -1322,13 +1322,14 @@
     font-size: var(--mainFontSize);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
 }
 
 .custom-tag-controls {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 8px;
 }
 
@@ -1403,7 +1404,7 @@
 }
 
 .remove-custom-tag-btn {
-    padding: 2px 6px;
+    padding: 6px 8px;
     background-color: transparent;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 3px;
@@ -1411,9 +1412,8 @@
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s ease;
-    font-size: 12px;
+    font-size: 14px;
     flex-shrink: 0;
-    margin-left: 5px;
 }
 
 .remove-custom-tag-btn:hover {

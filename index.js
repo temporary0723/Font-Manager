@@ -1440,9 +1440,6 @@ function renderCustomTagList(template) {
                 <div class="custom-tag-item">
                     <div class="custom-tag-info">
                         <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
-                        <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
                         <span class="custom-tag-arrow">→</span>
                         <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택">
                             ${fontOptions}
@@ -1451,6 +1448,9 @@ function renderCustomTagList(template) {
                     <div class="custom-tag-controls">
                         <label class="custom-tag-size-label">크기:</label>
                         <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" title="폰트 크기 (px)">
+                        <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
