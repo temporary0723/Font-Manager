@@ -36,7 +36,6 @@ const defaultSettings = {
     // 테마 연동 규칙들
     themeRules: [],
     // 태그 커스텀 설정
-    customTagEnabled: false,
     customTags: [],
     // 마크다운 커스텀 설정
     markdownCustomEnabled: false,
@@ -171,7 +170,6 @@ function initSettings() {
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
-            customTagEnabled: false,
             customTags: []
         };
         settings.presets.push(defaultPreset);
@@ -1116,11 +1114,9 @@ function updateMultiLanguageSectionState(template, enabled) {
     if (enabled) {
         languageSelectors.removeClass('disabled-section');
         languageSelectors.find('select').prop('disabled', false);
-        languageSelectors.find('input').prop('disabled', false);
     } else {
         languageSelectors.addClass('disabled-section');
         languageSelectors.find('select').prop('disabled', true);
-        languageSelectors.find('input').prop('disabled', true);
     }
 }
 
@@ -1244,36 +1240,8 @@ function renderCustomTagSection(template) {
         dropdown.append(`<option value="${font.name}">${font.name}</option>`);
     });
     
-    // 태그 커스텀 활성화 체크박스 설정
-    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
-    const presets = settings?.presets || [];
-    const currentPreset = presets.find(p => p.id === currentPresetId);
-    const customTagEnabled = currentPreset?.customTagEnabled ?? settings.customTagEnabled;
-    
-    template.find('#custom-tag-enabled-toggle').prop('checked', customTagEnabled);
-    
     // 현재 프리셋의 태그 목록 렌더링
     renderCustomTagList(template);
-    
-    // 활성화 상태에 따라 섹션 활성화/비활성화
-    updateCustomTagSectionState(template, customTagEnabled);
-}
-
-// 태그 커스텀 섹션 활성화 상태 업데이트
-function updateCustomTagSectionState(template, enabled) {
-    const customTagContent = template.find('#custom-tag-content');
-    
-    if (enabled) {
-        customTagContent.removeClass('disabled-section');
-        customTagContent.find('input').prop('disabled', false);
-        customTagContent.find('select').prop('disabled', false);
-        customTagContent.find('button').prop('disabled', false);
-    } else {
-        customTagContent.addClass('disabled-section');
-        customTagContent.find('input').prop('disabled', true);
-        customTagContent.find('select').prop('disabled', true);
-        customTagContent.find('button').prop('disabled', true);
-    }
 }
 
 // 태그 커스텀 리스트 렌더링
@@ -2742,32 +2710,6 @@ function setupEventListeners(template) {
         }
     });
     
-    // 태그 커스텀 활성화 토글 이벤트
-    template.find('#custom-tag-enabled-toggle').off('change').on('change', function() {
-        const enabled = $(this).is(':checked');
-        
-        // 현재 프리셋 가져오기
-        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
-        const presets = settings?.presets || [];
-        const currentPreset = presets.find(p => p.id === currentPresetId);
-        
-        if (currentPreset) {
-            currentPreset.customTagEnabled = enabled;
-        }
-        
-        // 전역 설정도 업데이트
-        settings.customTagEnabled = enabled;
-        
-        // 섹션 활성화/비활성화 업데이트
-        updateCustomTagSectionState(template, enabled);
-        
-        // 설정 저장
-        saveSettings();
-        
-        // 폰트 즉시 적용
-        updateUIFont();
-    });
-    
     // 태그 커스텀 추가 버튼 이벤트
     template.find('#add-custom-tag-btn').off('click').on('click', function() {
         const tagName = template.find('#custom-tag-name-input').val().trim();
@@ -2828,8 +2770,8 @@ function setupEventListeners(template) {
         // 설정 저장
         saveSettings();
         
-        // 메시지에 즉시 적용 (폰트 업데이트)
-        updateUIFont();
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
     });
     
     // 태그 커스텀 삭제 버튼 이벤트
@@ -3971,7 +3913,6 @@ function resetSettings(template) {
             inputFontSize: 14,
             chatFontWeight: 0,
             chatLineHeight: 1.2,
-            customTagEnabled: false,
             customTags: []
         };
         settings.presets = [defaultPreset];

@@ -1121,36 +1121,6 @@
     font-size: calc(var(--mainFontSize) * 1.1);
 }
 
-.custom-tag-toggle-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.custom-tag-toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    color: var(--SmartThemeBodyColor);
-    font-size: calc(var(--mainFontSize) * 0.95);
-}
-
-.custom-tag-toggle {
-    cursor: pointer;
-    width: 18px;
-    height: 18px;
-}
-
-.custom-tag-content {
-    transition: opacity 0.3s ease;
-}
-
-.custom-tag-content.disabled-section {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
 .custom-tag-guide {
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
