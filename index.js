@@ -775,8 +775,18 @@ async function showFontNamePopup(fontData) {
     return true;
 }
 
-// 폰트 파일 업로드 함수
-async function uploadFontFile(file, fontName) {
+// 파일을 Base64 Data URL로 변환하는 함수
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+// 폰트 파일 처리 함수 (Base64로 변환)
+async function processFontFile(file, fontName) {
     try {
         // 파일 유효성 검사
         const validExtensions = ['.woff2'];
@@ -792,31 +802,13 @@ async function uploadFontFile(file, fontName) {
             throw new Error('파일 크기가 너무 큽니다. (최대 10MB)');
         }
         
-        // FormData 생성
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('destination', 'webfonts'); // 저장 위치 지정
+        // 파일을 Base64 Data URL로 변환
+        const base64Data = await fileToBase64(file);
         
-        // 서버에 파일 업로드
-        const response = await fetch('/api/files/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `업로드 실패: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        
-        // 업로드된 파일 경로
-        const uploadedPath = result.path || `/webfonts/${file.name}`;
-        
-        // @font-face CSS 생성
+        // @font-face CSS 생성 (Data URL 사용)
         const fontFaceCSS = `@font-face {
   font-family: "${fontName}";
-  src: url("${uploadedPath}")
+  src: url("${base64Data}")
     format("woff2");
   font-style: normal;
 }`;
@@ -825,11 +817,11 @@ async function uploadFontFile(file, fontName) {
             success: true,
             css: fontFaceCSS,
             fontFamily: fontName,
-            path: uploadedPath
+            base64Data: base64Data
         };
         
     } catch (error) {
-        console.error('[Font Manager] 파일 업로드 오류:', error);
+        console.error('[Font Manager] 파일 처리 오류:', error);
         return {
             success: false,
             error: error.message
@@ -1343,8 +1335,8 @@ function renderFontAddArea(template) {
         <div class="font-upload-section">
             <h3>폰트 파일 업로드</h3>
             <div class="font-upload-info">
-                <p>woff2 파일을 업로드하여 SillyTavern에 직접 추가할 수 있습니다.</p>
-                <p>업로드된 파일은 <code>public/webfonts</code> 폴더에 저장됩니다.</p>
+                <p>woff2 파일을 선택하여 직접 추가할 수 있습니다.</p>
+                <p>파일은 Base64로 변환되어 브라우저 저장소에 저장됩니다. (서버 권한 불필요)</p>
             </div>
             <div class="font-upload-container">
                 <input type="file" id="font-file-input" class="font-file-input" accept=".woff2" style="display: none;">
@@ -2611,7 +2603,7 @@ function setupEventListeners(template) {
         
         uploadProgress.show();
         progressFill.css('width', '0%');
-        progressText.text('업로드 중...');
+        progressText.text('처리 중...');
         
         // 버튼 비활성화
         template.find('#upload-font-btn').prop('disabled', true);
@@ -2625,14 +2617,14 @@ function setupEventListeners(template) {
             progressFill.css('width', progress + '%');
         }, 200);
         
-        // 파일 업로드
-        const uploadResult = await uploadFontFile(file, fontName);
+        // 파일 처리 (Base64 변환)
+        const uploadResult = await processFontFile(file, fontName);
         
         clearInterval(progressInterval);
         
         if (uploadResult.success) {
             progressFill.css('width', '100%');
-            progressText.text('업로드 완료!');
+            progressText.text('처리 완료!');
             
             // 폰트를 설정에 직접 추가
             const newFont = {
@@ -2668,7 +2660,7 @@ function setupEventListeners(template) {
         } else {
             progressFill.css('width', '0%');
             uploadProgress.hide();
-            alert('❌ 업로드 실패\n\n' + uploadResult.error);
+            alert('❌ 처리 실패\n\n' + uploadResult.error);
         }
         
         // 버튼 다시 활성화
