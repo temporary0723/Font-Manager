@@ -94,9 +94,7 @@ function loadSettings() {
 // 설정 저장
 function saveSettings() {
     try {
-        console.log('[Font-Manager] saveSettings 호출됨');
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-        console.log('[Font-Manager] 설정 저장 완료');
     } catch (error) {
         console.error('[Font Manager] 설정 저장 실패:', error);
     }
@@ -197,36 +195,18 @@ const processedMessages = new Set();
 
 // 메시지에 태그 커스텀 폰트 적용
 function applyCustomTagFonts(forceRefresh = false) {
-    console.log('[Font-Manager] applyCustomTagFonts 시작:', {
-        forceRefresh: forceRefresh,
-        enabled: settings.enabled
-    });
-    
-    if (!settings.enabled) {
-        console.log('[Font-Manager] Font Manager가 비활성화됨');
-        return;
-    }
+    if (!settings.enabled) return;
     
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
     const customTags = currentPreset?.customTags ?? settings?.customTags ?? [];
     
-    console.log('[Font-Manager] customTags:', customTags);
-    
-    if (customTags.length === 0) {
-        console.log('[Font-Manager] customTags가 없음');
-        return;
-    }
+    if (customTags.length === 0) return;
     
     // chatData 한 번만 가져오기
     const chatData = getChatData();
-    if (!chatData) {
-        console.log('[Font-Manager] chatData를 가져올 수 없음');
-        return;
-    }
-    
-    console.log('[Font-Manager] chatData 길이:', chatData.length);
+    if (!chatData) return;
     
     // 폰트 정보 미리 가져오기
     const fonts = settings?.fonts || [];
@@ -259,19 +239,11 @@ function applyCustomTagFonts(forceRefresh = false) {
             };
         });
     
-    console.log('[Font-Manager] tagConfigs:', tagConfigs);
-    
-    if (tagConfigs.length === 0) {
-        console.log('[Font-Manager] tagConfigs가 없음');
-        return;
-    }
+    if (tagConfigs.length === 0) return;
     
     // 강제 새로고침인 경우 모든 처리 마크 제거 및 기존 태그 폰트 스타일 제거
     if (forceRefresh) {
-        console.log('[Font-Manager] 강제 새로고침 시작');
         processedMessages.clear();
-        
-        let restoredCount = 0;
         
         // 각 메시지에서 data-custom-tag-font span만 제거 (unwrap)
         document.querySelectorAll('.mes').forEach(mesElement => {
@@ -305,27 +277,18 @@ function applyCustomTagFonts(forceRefresh = false) {
                 });
                 
                 mesText.removeAttribute('data-tag-processed');
-                restoredCount++;
             }
         });
-        
-        console.log('[Font-Manager] 복원된 메시지 수:', restoredCount);
     }
     
     // 모든 메시지 요소에 대해 처리
     const messageElements = document.querySelectorAll('.mes');
-    console.log('[Font-Manager] 처리할 메시지 요소 수:', messageElements.length);
-    
-    let processedCount = 0;
-    let skippedCount = 0;
-    
     messageElements.forEach((messageElement) => {
         const mesId = messageElement.getAttribute('mesid');
         if (!mesId) return;
         
         // 이미 처리된 메시지이고 강제 새로고침이 아닌 경우 건너뛰기
         if (!forceRefresh && processedMessages.has(messageElement)) {
-            skippedCount++;
             return;
         }
         
@@ -360,19 +323,9 @@ function applyCustomTagFonts(forceRefresh = false) {
             }
         }
         
-        // 메시지 내부 데이터에서 태그 찾기
-        // display_text가 있으면 번역문에서, 없으면 원문에서 태그 찾기
-        // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
-        
-        // LLM Translator의 접기 모드 구조 확인
-        // 1. DOM에서 확인 (SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음)
-        const hasLlmTranslatorDetailsInDom = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details') !== null;
-        // 2. display_text에 details HTML이 있는지 확인
-        const displayTextHasDetails = hasDisplayText && 
-                                     message.extra.display_text && 
-                                     message.extra.display_text.includes('llm-translator-details');
-        
-        const hasLlmTranslatorDetails = hasLlmTranslatorDetailsInDom || displayTextHasDetails;
+        // LLM Translator의 접기 모드 구조 확인 (DOM에서 확인)
+        // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음
+        const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details') !== null;
         
         if (hasLlmTranslatorDetails) {
             // LLM Translator의 details 구조: 원본 메시지(mes)에서 태그를 찾아 DOM에 적용
@@ -394,14 +347,10 @@ function applyCustomTagFonts(forceRefresh = false) {
                 // DOM에서 텍스트만 추출 (sanitized)
                 const spanText = span.textContent.trim();
                 
-                console.log(`[Font-Manager] original_text 처리 중 (${idx}):`, spanText.substring(0, 50));
-                
-                // display_text에서 이 텍스트를 포함하는 태그 블록 찾기
-                let matchedTagContent = null;
+                // 원본 메시지에서 이 텍스트를 포함하는 태그 블록 찾기
                 let matchedFontFamily = null;
-                let bestMatchLength = 0; // 가장 긴 매칭을 찾기 위한 변수
-                
                 let matchedFontSize = null;
+                let bestMatchLength = 0; // 가장 긴 매칭을 찾기 위한 변수
                 
                 tagConfigs.forEach(tagConfig => {
                     if (matchedFontFamily) return; // 이미 매칭됨
@@ -415,14 +364,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                         
                         // 1순위: 정확히 일치
                         if (tagContentNormalized === spanTextNormalized) {
-                            matchedTagContent = tagContent;
                             matchedFontFamily = tagConfig.fontFamily;
                             matchedFontSize = tagConfig.fontSize;
-                            console.log(`[Font-Manager] 태그 매칭 성공 (정확 일치):`, {
-                                태그: tagConfig.tagName,
-                                DOM텍스트: spanText.substring(0, 30),
-                                태그내용: tagContent.substring(0, 30)
-                            });
                             break;
                         }
                         
@@ -431,15 +374,9 @@ function applyCustomTagFonts(forceRefresh = false) {
                         if (tagContentNormalized.includes(spanTextNormalized)) {
                             const matchLength = spanTextNormalized.length;
                             if (matchLength > bestMatchLength) {
-                                matchedTagContent = tagContent;
                                 matchedFontFamily = tagConfig.fontFamily;
                                 matchedFontSize = tagConfig.fontSize;
                                 bestMatchLength = matchLength;
-                                console.log(`[Font-Manager] 태그 매칭 성공 (부분 일치):`, {
-                                    태그: tagConfig.tagName,
-                                    DOM텍스트: spanText.substring(0, 30),
-                                    태그내용: tagContent.substring(0, 30)
-                                });
                             }
                         }
                     }
@@ -447,11 +384,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 // 매칭된 태그가 있으면 original_text와 translated_text 모두에 폰트 적용
                 if (matchedFontFamily) {
-                    console.log(`[Font-Manager] 폰트 적용 시작:`, {
-                        폰트: matchedFontFamily,
-                        크기: matchedFontSize
-                    });
-                    
                     // original_text에 폰트 적용
                     const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
                     const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
@@ -465,7 +397,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
                             const translatedContent = translatedTextSpan.innerHTML.replace(/\n/g, '<br>');
                             translatedTextSpan.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${translatedContent}</span>`;
-                            console.log('[Font-Manager] translated_text에도 폰트 적용됨');
                         }
                     }
                 }
@@ -474,13 +405,10 @@ function applyCustomTagFonts(forceRefresh = false) {
             if (hasChanges) {
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
-                processedCount++;
-                console.log(`[Font-Manager] 메시지 ${mesId} 처리 완료 (LLM Translator 모드, 변경 있음)`);
             } else {
                 // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
-                console.log(`[Font-Manager] 메시지 ${mesId} 처리 완료 (LLM Translator 모드, 변경 없음)`);
             }
         } else {
             // 일반 모드 또는 사용 안 함: sourceText 기반 처리
@@ -507,21 +435,12 @@ function applyCustomTagFonts(forceRefresh = false) {
                 messageContent.innerHTML = processedContent;
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
-                processedCount++;
-                console.log(`[Font-Manager] 메시지 ${mesId} 처리 완료 (일반 모드, 변경 있음)`);
             } else {
                 // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
-                console.log(`[Font-Manager] 메시지 ${mesId} 처리 완료 (일반 모드, 변경 없음)`);
             }
         }
-    });
-    
-    console.log('[Font-Manager] applyCustomTagFonts 완료:', {
-        처리된_메시지: processedCount,
-        건너뛴_메시지: skippedCount,
-        전체_메시지: messageElements.length
     });
 }
 
@@ -2410,13 +2329,7 @@ function setupCustomTagEventListeners(template) {
         const tagId = $(this).data('id');
         const newSize = parseInt($(this).val());
         
-        console.log('[Font-Manager] 폰트 사이즈 변경 이벤트:', {
-            tagId: tagId,
-            newSize: newSize
-        });
-        
         if (isNaN(newSize) || newSize < 8 || newSize > 40) {
-            console.log('[Font-Manager] 잘못된 폰트 사이즈:', newSize);
             alert('폰트 크기는 8px에서 40px 사이여야 합니다.');
             // 이전 값으로 복원
             const currentPresetId = selectedPresetId ?? settings?.currentPreset;
@@ -2429,7 +2342,6 @@ function setupCustomTagEventListeners(template) {
             return;
         }
         
-        console.log('[Font-Manager] updateCustomTagFontSize 호출 시작');
         updateCustomTagFontSize(template, tagId, newSize);
     });
 }
@@ -2460,49 +2372,20 @@ function deleteCustomTag(template, tagId) {
 
 // 태그 커스텀 폰트 사이즈 업데이트
 function updateCustomTagFontSize(template, tagId, fontSize) {
-    console.log('[Font-Manager] updateCustomTagFontSize 실행:', {
-        tagId: tagId,
-        fontSize: fontSize
-    });
-    
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
     const currentPreset = presets.find(p => p.id === currentPresetId);
     
-    console.log('[Font-Manager] 현재 프리셋:', {
-        currentPresetId: currentPresetId,
-        currentPreset: currentPreset,
-        hasCustomTags: !!currentPreset?.customTags
-    });
-    
-    if (!currentPreset || !currentPreset.customTags) {
-        console.log('[Font-Manager] 프리셋 또는 customTags가 없음');
-        return;
-    }
+    if (!currentPreset || !currentPreset.customTags) return;
     
     const tag = currentPreset.customTags.find(t => t.id === tagId);
     
-    console.log('[Font-Manager] 찾은 태그:', tag);
-    
     if (tag) {
-        const oldSize = tag.fontSize;
         tag.fontSize = fontSize;
-        
-        console.log('[Font-Manager] 태그 폰트 사이즈 업데이트:', {
-            tagName: tag.tagName,
-            oldSize: oldSize,
-            newSize: fontSize
-        });
-        
-        console.log('[Font-Manager] saveSettings 호출 시작');
         saveSettings();
         
-        console.log('[Font-Manager] applyCustomTagFonts(true) 호출 시작');
         // 메시지에 즉시 적용 (강제 새로고침)
         applyCustomTagFonts(true);
-        console.log('[Font-Manager] applyCustomTagFonts 완료');
-    } else {
-        console.log('[Font-Manager] 태그를 찾을 수 없음');
     }
 }
 
