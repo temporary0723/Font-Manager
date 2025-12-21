@@ -1521,9 +1521,9 @@ function renderFontAddArea(template) {
                 <p>SillyTavern 설치 폴더의 <code>/public/webfonts</code>에 woff2 파일을 직접 넣고,</p>
                 <p>위의 <strong>"폰트 가져오기"</strong>에서 아래 형식으로 추가하는 것을 권장합니다:</p>
                 <pre style="background-color: var(--black70a); padding: 8px; border-radius: 3px; margin-top: 8px; font-size: 0.85em; overflow-x: auto;">@font-face {
-  font-family: "(폰트이름)";
+  font-family: "폰트이름";
   font-weight: normal;
-  src: url("/webfonts/(폰트파일이름).woff2")
+  src: url("/webfonts/폰트파일이름.woff2")
     format("woff2");
   font-style: normal;
 }</pre>
