@@ -291,39 +291,23 @@ function applyCustomTagFonts(forceRefresh = false) {
         
         if (hasLlmTranslatorDetails) {
             // LLM Translator의 details 구조: display_text에서 태그를 찾아 DOM에 적용
-            console.log('[Font-Manager DEBUG] LLM Translator Details 모드 진입');
             let hasChanges = false;
             
             // display_text에서 태그가 있는 부분 찾기
             let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
-            console.log('[Font-Manager DEBUG] sourceText:', sourceText.substring(0, 200) + '...');
-            console.log('[Font-Manager DEBUG] messageContent.innerHTML:', messageContent.innerHTML.substring(0, 300) + '...');
             
             // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
             // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사)
             const textSpans = messageContent.querySelectorAll('.translated_text, .original_text, .custom-translated_text, .custom-original_text, .custom_translated_text, .custom_original_text');
-            console.log('[Font-Manager DEBUG] textSpans 개수:', textSpans.length);
-            
-            // 디버깅: details 요소 확인
-            const detailsElements = messageContent.querySelectorAll('details');
-            console.log('[Font-Manager DEBUG] details 요소 개수:', detailsElements.length);
-            detailsElements.forEach((details, idx) => {
-                console.log(`[Font-Manager DEBUG] details[${idx}] 클래스:`, details.className);
-                console.log(`[Font-Manager DEBUG] details[${idx}] innerHTML:`, details.innerHTML.substring(0, 100));
-            });
             
             textSpans.forEach((span, idx) => {
-                console.log(`[Font-Manager DEBUG] span[${idx}] 처리 시작`);
-                
                 // 이미 Font Manager span이 있는지 확인
                 if (span.querySelector('[data-custom-tag-font]')) {
-                    console.log(`[Font-Manager DEBUG] span[${idx}] 이미 처리됨 - 건너뛰기`);
                     return; // 이미 처리됨
                 }
                 
                 // DOM에서 텍스트만 추출 (sanitized)
                 const spanText = span.textContent.trim();
-                console.log(`[Font-Manager DEBUG] span[${idx}] DOM 텍스트:`, spanText);
                 
                 // display_text에서 이 텍스트를 포함하는 태그 블록 찾기
                 let matchedTagContent = null;
@@ -333,7 +317,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 tagConfigs.forEach(tagConfig => {
                     if (matchedFontFamily) return; // 이미 매칭됨
                     
-                    console.log(`[Font-Manager DEBUG] span[${idx}] 태그 검사: ${tagConfig.tagName}`);
                     const matches = sourceText.matchAll(tagConfig.regex);
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
@@ -341,20 +324,10 @@ function applyCustomTagFonts(forceRefresh = false) {
                         const tagContentNormalized = tagContent.replace(/\s+/g, '').replace(/\n/g, '').trim();
                         const spanTextNormalized = spanText.replace(/\s+/g, '').trim();
                         
-                        console.log(`[Font-Manager DEBUG] span[${idx}] 비교:`, {
-                            tagContent: tagContent.substring(0, 50),
-                            tagContentNormalized: tagContentNormalized.substring(0, 50),
-                            spanTextNormalized: spanTextNormalized.substring(0, 50),
-                            exactMatch: tagContentNormalized === spanTextNormalized,
-                            includes1: tagContentNormalized.includes(spanTextNormalized),
-                            includes2: spanTextNormalized.includes(tagContentNormalized)
-                        });
-                        
                         // 1순위: 정확히 일치
                         if (tagContentNormalized === spanTextNormalized) {
                             matchedTagContent = tagContent;
                             matchedFontFamily = tagConfig.fontFamily;
-                            console.log(`[Font-Manager DEBUG] span[${idx}] ✅ 정확히 매칭! 폰트: ${matchedFontFamily}`);
                             break;
                         }
                         
@@ -366,7 +339,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                                 matchedTagContent = tagContent;
                                 matchedFontFamily = tagConfig.fontFamily;
                                 bestMatchLength = matchLength;
-                                console.log(`[Font-Manager DEBUG] span[${idx}] ✅ 부분 매칭 (길이: ${matchLength})! 폰트: ${matchedFontFamily}`);
                             }
                         }
                     }
@@ -377,9 +349,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
                     span.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
                     hasChanges = true;
-                    console.log(`[Font-Manager DEBUG] span[${idx}] 폰트 적용 완료`);
-                } else {
-                    console.log(`[Font-Manager DEBUG] span[${idx}] ❌ 매칭 실패 - 폰트 미적용`);
                 }
             });
             
