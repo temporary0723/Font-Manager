@@ -1847,6 +1847,9 @@ ${languageFontCss.join('')}
     
     const sanitizedCss = sanitize(finalCss);
     fontStyle.innerHTML = sanitizedCss;
+    
+    // 메시지 폰트 CSS 다음에 마크다운 CSS 적용 (우선순위 보장)
+    applyMarkdownCustomFontsInternal();
 }
 
 // 현재 프리셋의 UI 폰트 가져오기
@@ -1933,9 +1936,9 @@ function getCurrentPresetChatLineHeight() {
     return null;
 }
 
-// 마크다운 커스텀 폰트 적용
-function applyMarkdownCustomFonts() {
-    console.log('[Markdown Custom] applyMarkdownCustomFonts 시작');
+// 마크다운 커스텀 폰트 적용 (내부 버전 - updateUIFont에서 호출)
+function applyMarkdownCustomFontsInternal() {
+    console.log('[Markdown Custom] applyMarkdownCustomFontsInternal 시작');
     
     // 기존 마크다운 스타일 제거
     if (markdownStyle) {
@@ -1970,18 +1973,11 @@ function applyMarkdownCustomFonts() {
         return;
     }
     
-    // 새 스타일 엘리먼트 생성
+    // 새 스타일 엘리먼트 생성 (항상 head 끝에 추가하여 최우선 적용)
     markdownStyle = document.createElement('style');
     markdownStyle.id = 'font-manager-markdown-custom';
-    
-    // fontStyle이 있으면 그 다음에 추가 (더 높은 우선순위)
-    if (fontStyle && fontStyle.nextSibling) {
-        document.head.insertBefore(markdownStyle, fontStyle.nextSibling);
-        console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (fontStyle 다음)');
-    } else {
-        document.head.appendChild(markdownStyle);
-        console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 끝)');
-    }
+    document.head.appendChild(markdownStyle);
+    console.log('[Markdown Custom] 새 스타일 엘리먼트 생성됨 (head 끝 - 최우선)');
     
     const fonts = settings?.fonts || [];
     const markdownCss = [];
@@ -2102,6 +2098,13 @@ ${fontSizeStyle}}
     }
 }
 
+// 마크다운 커스텀 폰트 적용 (외부에서 호출 - updateUIFont도 함께 호출)
+function applyMarkdownCustomFonts() {
+    console.log('[Markdown Custom] applyMarkdownCustomFonts (래퍼) 호출');
+    // updateUIFont를 호출하면 내부에서 applyMarkdownCustomFontsInternal이 자동으로 호출됨
+    updateUIFont();
+}
+
 // UI 폰트 임시 적용
 function applyTempUIFont(fontName) {
     tempUiFont = fontName;
@@ -2153,8 +2156,7 @@ function setupEventListeners(template) {
     template.find('#font-manager-enabled-toggle').off('change').on('change', function() {
         settings.enabled = $(this).prop('checked');
         saveSettings();
-        updateUIFont(); // 토글 상태 변경 시 스타일 업데이트
-        applyMarkdownCustomFonts(); // 마크다운 커스텀 폰트 업데이트
+        updateUIFont(); // 토글 상태 변경 시 스타일 업데이트 (마크다운도 자동 적용)
         updateSectionsState(template, settings.enabled); // 섹션들 활성화/비활성화
     });
     
@@ -2987,9 +2989,7 @@ function deleteFont(template, fontId) {
 // 모든 폰트 업데이트 (초기 로드용)  
 function updateAllFonts() {
     console.log('[Font Manager] updateAllFonts 호출');
-    updateUIFont();
-    console.log('[Font Manager] applyMarkdownCustomFonts 호출 시작');
-    applyMarkdownCustomFonts();
+    updateUIFont(); // 이 안에서 applyMarkdownCustomFontsInternal이 자동 호출됨
     // 테마 자동 감지 시작
     startThemeDetection();
     // 태그 커스텀 옵저버 시작
@@ -3100,9 +3100,8 @@ function applyPresetById(presetId) {
     tempChatFontWeight = preset.chatFontWeight ?? settings.chatFontWeight;
     tempChatLineHeight = preset.chatLineHeight ?? settings.chatLineHeight;
     
-    // 폰트 적용
+    // 폰트 적용 (마크다운도 자동 적용)
     updateUIFont();
-    applyMarkdownCustomFonts();
 }
 
 // SillyTavern 테마 이벤트 감지 설정
