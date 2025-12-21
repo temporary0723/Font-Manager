@@ -278,13 +278,13 @@ function applyCustomTagFonts(forceRefresh = false) {
         // 메시지 내부 데이터에서 태그 찾기
         // display_text가 있으면 번역문에서, 없으면 원문에서 태그 찾기
         // (SillyTavern은 렌더링 시 태그를 제거하므로 원본 데이터 사용)
-        let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
         
-        // LLM Translator의 접기 모드 구조 확인
+        // LLM Translator의 접기 모드 구조 확인 (DOM 기준)
         const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details') !== null;
         
         if (hasLlmTranslatorDetails) {
-            // LLM Translator의 details 구조가 있는 경우: 각 span을 개별 처리
+            // LLM Translator의 details 구조가 이미 DOM에 있는 경우: 각 span을 개별 처리
+            // (display_text를 읽지 않고 DOM에서 직접 처리)
             let hasChanges = false;
             
             // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
@@ -320,9 +320,14 @@ function applyCustomTagFonts(forceRefresh = false) {
             if (hasChanges) {
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
+            } else {
+                // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
+                messageContent.setAttribute('data-tag-processed', 'true');
+                processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: 기존 로직
+            // 일반 모드 또는 사용 안 함: sourceText 기반 처리
+            let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
             let processedContent = sourceText;
             let hasChanges = false;
             
