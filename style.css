@@ -508,6 +508,7 @@
 .font-upload-container {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
 }
@@ -1402,7 +1403,7 @@
 }
 
 .remove-custom-tag-btn {
-    padding: 6px 8px;
+    padding: 2px 6px;
     background-color: transparent;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 3px;
@@ -1410,8 +1411,9 @@
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s ease;
-    font-size: 14px;
+    font-size: 12px;
     flex-shrink: 0;
+    margin-left: 5px;
 }
 
 .remove-custom-tag-btn:hover {
