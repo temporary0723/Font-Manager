@@ -290,9 +290,11 @@ function applyCustomTagFonts(forceRefresh = false) {
         const hasLlmTranslatorDetails = hasLlmTranslatorDetailsInDom || displayTextHasDetails;
         
         if (hasLlmTranslatorDetails) {
-            // LLM Translator의 details 구조가 이미 DOM에 있는 경우: 각 span을 개별 처리
-            // (display_text를 읽지 않고 DOM에서 직접 처리)
+            // LLM Translator의 details 구조: display_text에서 태그를 찾아 DOM에 적용
             let hasChanges = false;
+            
+            // display_text에서 태그가 있는 부분 찾기
+            let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
             
             // .translated_text와 .original_text 내부의 텍스트 노드들을 처리
             const textSpans = messageContent.querySelectorAll('.translated_text, .original_text');
@@ -303,24 +305,33 @@ function applyCustomTagFonts(forceRefresh = false) {
                     return; // 이미 처리됨
                 }
                 
-                let spanContent = span.innerHTML;
-                let spanChanged = false;
+                // DOM에서 텍스트만 추출 (sanitized)
+                const spanText = span.textContent.trim();
+                
+                // display_text에서 이 텍스트를 포함하는 태그 블록 찾기
+                let matchedTagContent = null;
+                let matchedFontFamily = null;
                 
                 tagConfigs.forEach(tagConfig => {
-                    const newContent = spanContent.replace(tagConfig.regex, (match, content) => {
-                        spanChanged = true;
-                        hasChanges = true;
-                        const contentWithBreaks = content.replace(/\n/g, '<br>');
-                        return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
-                    });
-                    
-                    if (spanChanged) {
-                        spanContent = newContent;
+                    const matches = sourceText.matchAll(tagConfig.regex);
+                    for (const match of matches) {
+                        const tagContent = match[1]; // 태그 내용
+                        const tagContentNormalized = tagContent.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim();
+                        const spanTextNormalized = spanText.replace(/\s+/g, ' ').trim();
+                        
+                        if (tagContentNormalized.includes(spanTextNormalized) || spanTextNormalized.includes(tagContentNormalized)) {
+                            matchedTagContent = tagContent;
+                            matchedFontFamily = tagConfig.fontFamily;
+                            break;
+                        }
                     }
                 });
                 
-                if (spanChanged) {
-                    span.innerHTML = spanContent;
+                // 매칭된 태그가 있으면 폰트 적용
+                if (matchedFontFamily) {
+                    const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
+                    span.innerHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;">${contentWithBreaks}</span>`;
+                    hasChanges = true;
                 }
             });
             
