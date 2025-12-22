@@ -525,7 +525,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                     
                     // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
                     if (!span.querySelector('[data-custom-tag-font]')) {
-                        const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
+                        const contentWithBreaks = span.innerHTML.trim().replace(/\n/g, '<br>');
                         const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
                         
                         // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
@@ -540,7 +540,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                     if (detailsElement) {
                         const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
-                            const translatedContent = translatedTextSpan.innerHTML.replace(/\n/g, '<br>');
+                            const translatedContent = translatedTextSpan.innerHTML.trim().replace(/\n/g, '<br>');
                             const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${translatedContent}</span>`;
                             
                             // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
@@ -570,8 +570,8 @@ function applyCustomTagFonts(forceRefresh = false) {
             tagConfigs.forEach(tagConfig => {
                 processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
                     hasChanges = true;
-                    // 줄바꿈을 <br>로 변환하여 유지
-                    const contentWithBreaks = content.replace(/\n/g, '<br>');
+                    // 앞뒤 공백 제거 후 줄바꿈을 <br>로 변환하여 유지
+                    const contentWithBreaks = content.trim().replace(/\n/g, '<br>');
                     // 태그 내용을 span으로 감싸서 폰트 적용
                     const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
                     const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
