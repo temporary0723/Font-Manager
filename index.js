@@ -1314,13 +1314,14 @@ function renderMarkdownCustomSection(template) {
         }
         
         // 배경색 설정
+        const bgColor = markdownCustom[type]?.backgroundColor || '#141e1e';
+        const bgColorText = template.find(`#markdown-${type}-bg-color-text`);
+        const bgColorPreview = template.find(`#markdown-${type}-bg-color-preview`);
         const bgColorInput = template.find(`#markdown-${type}-bg-color-input`);
-        const bgColor = markdownCustom[type]?.backgroundColor;
-        if (bgColor) {
-            bgColorInput.val(bgColor);
-        } else {
-            bgColorInput.val('#141e1e');  // 기본값
-        }
+        
+        bgColorText.val(bgColor);
+        bgColorPreview.css('background-color', bgColor);
+        bgColorInput.val(bgColor);
     });
     
     // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
@@ -2697,10 +2698,13 @@ function setupEventListeners(template) {
             }
         });
         
-        // 배경색 입력 이벤트
-        template.find(`#markdown-${type}-bg-color-input`).off('change input').on('change input', function() {
-            const bgColor = $(this).val();
-            
+        // 배경색 관련 요소들
+        const bgColorText = template.find(`#markdown-${type}-bg-color-text`);
+        const bgColorPreview = template.find(`#markdown-${type}-bg-color-preview`);
+        const bgColorInput = template.find(`#markdown-${type}-bg-color-input`);
+        
+        // 배경색 저장 함수
+        const saveBgColor = (bgColor) => {
             const currentPresetId = selectedPresetId ?? settings?.currentPreset;
             const presets = settings?.presets || [];
             const currentPreset = presets.find(p => p.id === currentPresetId);
@@ -2735,6 +2739,62 @@ function setupEventListeners(template) {
             
             saveSettings();
             applyMarkdownCustomFonts();
+        };
+        
+        // 색상 유효성 검사 함수
+        const isValidColor = (color) => {
+            if (!color) return false;
+            // hex 형식 검사 (#000 ~ #ffffff)
+            return /^#([0-9A-Fa-f]{3}){1,2}$/.test(color);
+        };
+        
+        // 텍스트 입력 이벤트 (debounce 적용)
+        let textInputTimeout;
+        bgColorText.off('input').on('input', function() {
+            const inputValue = $(this).val().trim();
+            
+            clearTimeout(textInputTimeout);
+            textInputTimeout = setTimeout(() => {
+                if (isValidColor(inputValue)) {
+                    bgColorPreview.css('background-color', inputValue);
+                    bgColorInput.val(inputValue);
+                    saveBgColor(inputValue);
+                }
+            }, 500);
+        });
+        
+        // 텍스트 입력 blur 이벤트 (즉시 적용)
+        bgColorText.off('blur').on('blur', function() {
+            const inputValue = $(this).val().trim();
+            
+            if (isValidColor(inputValue)) {
+                bgColorPreview.css('background-color', inputValue);
+                bgColorInput.val(inputValue);
+                clearTimeout(textInputTimeout);
+                saveBgColor(inputValue);
+            } else if (inputValue && !isValidColor(inputValue)) {
+                // 유효하지 않은 값이면 이전 값으로 복원
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                const savedColor = currentPreset?.markdownCustom?.[type]?.backgroundColor || 
+                                 settings.markdownCustom?.[type]?.backgroundColor || 
+                                 '#141e1e';
+                $(this).val(savedColor);
+            }
+        });
+        
+        // 프리뷰 클릭 시 color picker 열기
+        bgColorPreview.off('click').on('click', function() {
+            bgColorInput.trigger('click');
+        });
+        
+        // 숨겨진 color input 변경 이벤트
+        bgColorInput.off('change').on('change', function() {
+            const bgColor = $(this).val();
+            bgColorText.val(bgColor);
+            bgColorPreview.css('background-color', bgColor);
+            saveBgColor(bgColor);
         });
     });
     

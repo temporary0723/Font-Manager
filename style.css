@@ -1712,26 +1712,65 @@
     opacity: 0.7;
 }
 
-.markdown-bg-color-input {
-    width: 50px;
-    height: 36px;
-    padding: 2px;
+/* 색상 선택 래퍼 */
+.markdown-color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 110px;
+}
+
+/* 색상 텍스트 입력 */
+.markdown-bg-color-text {
+    width: 75px;
+    padding: 8px;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     background-color: var(--black50a);
-    cursor: pointer;
+    color: var(--SmartThemeBodyColor);
+    font-family: 'Courier New', monospace;
+    font-size: calc(var(--mainFontSize) * 0.85);
     transition: all 0.2s ease;
+    text-align: center;
 }
 
-.markdown-bg-color-input:hover {
-    border-color: var(--SmartThemeQuoteColor);
-    transform: scale(1.05);
-}
-
-.markdown-bg-color-input:focus {
+.markdown-bg-color-text:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor);
     box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.markdown-bg-color-text:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.markdown-bg-color-text::placeholder {
+    color: var(--grey30);
+    opacity: 0.6;
+    font-size: calc(var(--mainFontSize) * 0.75);
+}
+
+/* 색상 프리뷰 박스 */
+.markdown-bg-color-preview {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #141e1e;
+    flex-shrink: 0;
+}
+
+.markdown-bg-color-preview:hover {
+    border-color: var(--SmartThemeQuoteColor);
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(var(--SmartThemeQuoteColorRGB), 0.4);
+}
+
+/* 숨겨진 color input */
+.markdown-bg-color-input-hidden {
+    display: none;
 }
 
 /* 마크다운 섹션 반응형 디자인 */
@@ -1752,9 +1791,13 @@
     }
     
     .markdown-font-dropdown,
-    .markdown-size-input,
-    .markdown-bg-color-input {
+    .markdown-size-input {
         width: 100%;
+    }
+    
+    .markdown-color-picker-wrapper {
+        width: 100%;
+        justify-content: center;
     }
 }
 
