@@ -1828,20 +1828,33 @@
     }
     
     .markdown-control-row {
-        flex-direction: column;
-        width: 100%;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 6px;
     }
     
-    .markdown-font-dropdown,
-    .markdown-size-input,
+    .markdown-font-dropdown {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .markdown-size-input {
+        width: 60px;
+        flex-shrink: 0;
+    }
+    
     .markdown-padding-input {
-        width: 100%;
+        width: 60px;
+        flex-shrink: 0;
     }
     
     .markdown-color-picker-wrapper {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .markdown-bg-color-text {
         width: 100%;
-        justify-content: center;
+        min-width: 100px;
     }
 }
 
@@ -1852,6 +1865,31 @@
     
     .markdown-font-selectors {
         gap: 10px;
+    }
+    
+    .markdown-control-row {
+        gap: 5px;
+    }
+    
+    .markdown-font-dropdown {
+        min-width: 100px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+    }
+    
+    .markdown-size-input,
+    .markdown-padding-input {
+        width: 55px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+    }
+    
+    .markdown-bg-color-text {
+        font-size: calc(var(--mainFontSize) * 0.75);
+        min-width: 90px;
+    }
+    
+    .markdown-bg-color-preview {
+        width: 24px;
+        height: 24px;
     }
 }
 
