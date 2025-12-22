@@ -487,21 +487,24 @@ function applyCustomTagFonts(forceRefresh = false) {
                 tagConfigs.forEach(tagConfig => {
                     if (matchedFontFamily) return; // 이미 매칭됨
                     
-                    const matches = sourceText.matchAll(tagConfig.regex);
+                    const matches = [...sourceText.matchAll(tagConfig.regex)];
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
                         
-                        // 정규화 함수: 공백/줄바꿈 제거 + 리스트 마커(-, *) 제거
+                        // 정규화 함수: 모든 공백/줄바꿈/특수문자 제거
                         const normalizeText = (text) => {
                             return (text || '')
-                                .replace(/\n/g, ' ')           // 줄바꿈을 공백으로
-                                .replace(/^\s*[-*]\s+/gm, '')  // 줄 시작의 리스트 마커 제거
-                                .replace(/\s+/g, '')           // 모든 공백 제거
+                                .replace(/\n/g, '')             // 줄바꿈 제거
+                                .replace(/^\s*[-*]\s*/gm, '')   // 리스트 마커 제거
+                                .replace(/\s+/g, '')            // 모든 공백 제거
                                 .trim();
                         };
                         
                         const tagContentNormalized = normalizeText(tagContent);
                         const spanTextNormalized = normalizeText(spanText);
+                        
+                        // 빈 문자열은 건너뛰기
+                        if (!tagContentNormalized || !spanTextNormalized) continue;
                         
                         // 1순위: 정확히 일치
                         if (tagContentNormalized === spanTextNormalized) {
@@ -511,8 +514,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                             break;
                         }
                         
-                        // 2순위: 태그 내용이 DOM 텍스트를 포함하는 경우만 허용 (더 긴 매칭 우선)
-                        if (tagContentNormalized.includes(spanTextNormalized) && spanTextNormalized.length >= 10) {
+                        // 2순위: 태그 내용이 DOM 텍스트를 포함 (최소 5자)
+                        if (spanTextNormalized.length >= 5 && tagContentNormalized.includes(spanTextNormalized)) {
                             const matchLength = spanTextNormalized.length;
                             if (matchLength > bestMatchLength) {
                                 matchedFontFamily = tagConfig.fontFamily;
@@ -522,8 +525,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                             }
                         }
                         
-                        // 3순위: DOM 텍스트가 태그 내용을 포함하는 경우 (리스트 마커가 제거되었을 때)
-                        if (!matchedFontFamily && spanTextNormalized.includes(tagContentNormalized) && tagContentNormalized.length >= 10) {
+                        // 3순위: DOM 텍스트가 태그 내용을 포함 (최소 5자)
+                        if (!matchedFontFamily && tagContentNormalized.length >= 5 && spanTextNormalized.includes(tagContentNormalized)) {
                             const matchLength = tagContentNormalized.length;
                             if (matchLength > bestMatchLength) {
                                 matchedFontFamily = tagConfig.fontFamily;
