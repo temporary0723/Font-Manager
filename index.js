@@ -494,9 +494,9 @@ function applyCustomTagFonts(forceRefresh = false) {
                         // 정규화 함수: 모든 공백/줄바꿈/특수문자 제거
                         const normalizeText = (text) => {
                             return (text || '')
-                                .replace(/\n/g, '')             // 줄바꿈 제거
-                                .replace(/^\s*[-*]\s*/gm, '')   // 리스트 마커 제거
-                                .replace(/\s+/g, '')            // 모든 공백 제거
+                                .replace(/^\s*[-*]\s+/gm, '')   // 1. 리스트 마커 제거 (줄바꿈 있는 상태에서)
+                                .replace(/\n/g, '')             // 2. 줄바꿈 제거
+                                .replace(/\s+/g, '')            // 3. 모든 공백 제거
                                 .trim();
                         };
                         
