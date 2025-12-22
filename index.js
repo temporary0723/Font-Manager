@@ -4,6 +4,7 @@ import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from "../../../slash-commands/SlashCommandArgument.js";
 import { POPUP_RESULT, POPUP_TYPE, Popup } from "../../../popup.js";
+import { messageFormatting } from "../../../../script.js";
 
 // 확장 설정
 const extensionName = "Font-Manager";
@@ -561,62 +562,102 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: DOM HTML 기반 처리 (마크다운이 이미 변환된 상태)
-            // DOM에서 현재 HTML 가져오기 (SillyTavern이 이미 마크다운을 변환한 상태)
-            let processedContent = messageContent.innerHTML;
+            // 일반 모드 또는 사용 안 함: 원본 텍스트 기반 처리 + 마크다운 변환
+            const sourceText = message.mes;
+            let processedText = sourceText;
             let hasChanges = false;
             
-            // 원본 소스에서 태그 패턴 찾기
-            const sourceText = message.mes;
+            // 태그 정보를 저장할 배열 (나중에 복원용)
+            const tagReplacements = [];
             
-            // 모든 태그에 대해 처리
-            tagConfigs.forEach(tagConfig => {
-                // 원본 텍스트에서 태그가 있는지 확인
-                const matches = [...sourceText.matchAll(tagConfig.regex)];
+            // 1단계: 태그를 임시 마커로 치환
+            tagConfigs.forEach((tagConfig, index) => {
+                const matches = [...processedText.matchAll(tagConfig.regex)];
                 
                 if (matches.length > 0) {
-                    matches.forEach(match => {
-                        const fullTag = match[0]; // 전체 태그 (<TAG>내용</TAG>)
-                        const tagContent = match[1]; // 태그 내용
+                    hasChanges = true;
+                    
+                    matches.forEach((match, matchIndex) => {
+                        const fullMatch = match[0];
+                        const tagContent = match[1];
                         
-                        // 이미 처리되었는지 확인
-                        if (processedContent.includes(`data-custom-tag-font="${tagConfig.fontFamily}"`)) {
-                            // 이미 처리됨
-                            return;
-                        }
+                        // 고유한 마커 생성
+                        const marker = `|||TAG_MARKER_${index}_${matchIndex}|||`;
                         
-                        hasChanges = true;
-                        
-                        // HTML에서 태그 블록을 찾아 span으로 래핑
-                        // 태그가 이미 HTML 요소로 변환되었을 수 있음 (예: <tag>content</tag>)
-                        const tagName = tagConfig.tagName.toLowerCase();
-                        const tagPattern = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'gis');
-                        
-                        processedContent = processedContent.replace(tagPattern, (htmlMatch, htmlContent) => {
-                            // 폰트 스타일 생성
-                            const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
-                            const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                            
-                            // 태그 내용을 span으로 감싸서 폰트 적용 (기존 HTML 마크업 유지)
-                            return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${htmlContent}</span>`;
+                        // 태그 정보 저장
+                        tagReplacements.push({
+                            marker: marker,
+                            content: tagContent,
+                            config: tagConfig
                         });
+                        
+                        // 태그를 마커로 치환
+                        processedText = processedText.replace(fullMatch, marker);
                     });
                 }
             });
             
-            // 처리된 내용을 DOM에 적용
             if (hasChanges) {
-                // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
+                // 2단계: 마크다운 변환 적용 (messageFormatting 사용)
+                try {
+                    // messageFormatting을 사용하여 마크다운 변환
+                    // 첫 번째 매개변수: 텍스트, 두 번째: 메시지 이름, 세 번째: isSystem, 네 번째: isUser
+                    processedText = messageFormatting(
+                        processedText,
+                        message.name || '',
+                        message.is_system || false,
+                        message.is_user || false
+                    );
+                } catch (error) {
+                    console.warn('[Font Manager] messageFormatting failed, using fallback:', error);
+                    // 폴백: 기본 줄바꿈 처리
+                    processedText = processedText.replace(/\n{2,}/g, '|||PARAGRAPH|||');
+                    processedText = processedText.replace(/\n/g, '<br>');
+                    const paragraphs = processedText.split('|||PARAGRAPH|||').filter(p => p.trim());
+                    if (paragraphs.length > 0) {
+                        processedText = '<p>' + paragraphs.join('</p><p>') + '</p>';
+                    }
+                }
+                
+                // 3단계: 마커를 폰트가 적용된 span으로 교체
+                tagReplacements.forEach(replacement => {
+                    const fontSizeStyle = replacement.config.fontSize ? ` font-size: ${replacement.config.fontSize}px !important;` : '';
+                    const bgColorStyle = replacement.config.backgroundColor ? ` background-color: ${replacement.config.backgroundColor} !important; padding: ${replacement.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                    
+                    // 마커가 포함된 내용을 찾아서 교체
+                    // 마커는 마크다운 변환 과정에서 <p> 태그 등으로 감싸졌을 수 있음
+                    const markerPattern = new RegExp(replacement.marker.replace(/\|/g, '\\|'), 'g');
+                    
+                    // 마커 내용에 마크다운 변환 적용
+                    let formattedContent = replacement.content;
+                    try {
+                        formattedContent = messageFormatting(
+                            replacement.content,
+                            message.name || '',
+                            message.is_system || false,
+                            message.is_user || false
+                        );
+                    } catch (error) {
+                        // 폴백: 기본 줄바꿈만 처리
+                        formattedContent = formattedContent.replace(/\n/g, '<br>');
+                    }
+                    
+                    const wrappedContent = `<span data-custom-tag-font="${replacement.config.fontFamily}" style="font-family: '${replacement.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${formattedContent}</span>`;
+                    
+                    processedText = processedText.replace(markerPattern, wrappedContent);
+                });
+                
+                // DOM에 적용
                 const currentHTML = messageContent.innerHTML.trim();
-                const newHTML = processedContent.trim();
+                const newHTML = processedText.trim();
                 
                 if (currentHTML !== newHTML) {
-                    messageContent.innerHTML = processedContent;
+                    messageContent.innerHTML = processedText;
                 }
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
             } else {
-                // 태그가 없어도 처리 표시 (다음번에 건너뛰기)
+                // 태그가 없어도 처리 표시
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
             }
