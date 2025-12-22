@@ -3306,8 +3306,6 @@ function setupEventListeners(template) {
     template.find('#add-custom-tag-btn').off('click').on('click', function() {
         const tagName = template.find('#custom-tag-name-input').val().trim();
         const fontName = template.find('#custom-tag-font-dropdown').val();
-        const bgColor = template.find('#custom-tag-bg-color-text').val().trim();
-        const padding = parseInt(template.find('#custom-tag-padding-input').val());
         
         if (!tagName) {
             alert('태그 이름을 입력해주세요.');
@@ -3339,15 +3337,15 @@ function setupEventListeners(template) {
             return;
         }
         
-        // 새 태그 추가 (대문자로 저장, 기본 폰트 사이즈는 현재 메시지 폰트 크기)
+        // 새 태그 추가 (배경색과 여백은 기본값 null)
         const defaultFontSize = currentPreset?.chatFontSize ?? settings?.chatFontSize ?? 14;
         const newTag = {
             id: generateId(),
             tagName: tagNameUpper,
             fontName: fontName,
             fontSize: defaultFontSize,
-            backgroundColor: bgColor || null,
-            backgroundPadding: (!isNaN(padding) && padding >= 1 && padding <= 10) ? padding : null
+            backgroundColor: null,
+            backgroundPadding: null
         };
         
         if (!currentPreset.customTags) {
@@ -3358,9 +3356,6 @@ function setupEventListeners(template) {
         // 입력 필드 초기화
         template.find('#custom-tag-name-input').val('');
         template.find('#custom-tag-font-dropdown').val('');
-        template.find('#custom-tag-bg-color-text').val('');
-        template.find('#custom-tag-bg-color-preview').css('background-color', 'transparent');
-        template.find('#custom-tag-padding-input').val('');
         
         // 리스트 업데이트
         renderCustomTagList(template);
