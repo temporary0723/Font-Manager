@@ -370,6 +370,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                 textColor: tag.textColor || null,
                 backgroundColor: tag.backgroundColor || null,
                 backgroundPadding: tag.backgroundPadding || 2,
+                backgroundHeight: tag.backgroundHeight || null,
                 regex: tagRegex
             };
         });
@@ -550,7 +551,16 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const textColorStyle = matchedTextColor ? ` color: ${matchedTextColor} !important;` : '';
                     const matchedBgColor = matchedTag?.backgroundColor;
                     const matchedPadding = matchedTag?.backgroundPadding || 2;
-                    const bgColorStyle = matchedBgColor ? ` background-color: ${matchedBgColor} !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                    const matchedBgHeight = matchedTag?.backgroundHeight;
+                    // 높이가 지정되면 linear-gradient 사용, 아니면 기존 background-color 사용
+                    let bgColorStyle = '';
+                    if (matchedBgColor) {
+                        if (matchedBgHeight && matchedBgHeight < 100) {
+                            bgColorStyle = ` background: linear-gradient(to top, ${matchedBgColor} ${matchedBgHeight}%, transparent ${matchedBgHeight}%) !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                        } else {
+                            bgColorStyle = ` background-color: ${matchedBgColor} !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                        }
+                    }
                     
                     // 과한 개행 정리 함수
                     const cleanupContent = (html) => {
@@ -712,9 +722,15 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 const fontSizeStyle = tag.config.fontSize ? ` font-size: ${tag.config.fontSize}px !important;` : '';
                 const textColorStyle = tag.config.textColor ? ` color: ${tag.config.textColor} !important;` : '';
-                const bgColorStyle = tag.config.backgroundColor 
-                    ? ` background-color: ${tag.config.backgroundColor} !important; padding: ${tag.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` 
-                    : '';
+                // 높이가 지정되면 linear-gradient 사용, 아니면 기존 background-color 사용
+                let bgColorStyle = '';
+                if (tag.config.backgroundColor) {
+                    if (tag.config.backgroundHeight && tag.config.backgroundHeight < 100) {
+                        bgColorStyle = ` background: linear-gradient(to top, ${tag.config.backgroundColor} ${tag.config.backgroundHeight}%, transparent ${tag.config.backgroundHeight}%) !important; padding: ${tag.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                    } else {
+                        bgColorStyle = ` background-color: ${tag.config.backgroundColor} !important; padding: ${tag.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                    }
+                }
                 
                 // span으로 감싸고 앞뒤에 줄바꿈 추가 (문단 분리)
                 const wrappedContent = `</p><p><span data-custom-tag-font="${tag.config.fontFamily}" style="font-family: '${tag.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${formattedContent}</span></p><p>`;
@@ -1499,6 +1515,15 @@ function renderMarkdownCustomSection(template) {
         } else {
             paddingInput.val('');
         }
+        
+        // 배경 높이 설정
+        const heightInput = template.find(`#markdown-${type}-height-input`);
+        const bgHeight = markdownCustom[type]?.backgroundHeight;
+        if (bgHeight) {
+            heightInput.val(bgHeight);
+        } else {
+            heightInput.val('');
+        }
     });
     
     // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
@@ -1626,6 +1651,7 @@ function renderCustomTagList(template) {
             const textColor = tag.textColor || '';
             const bgColor = tag.backgroundColor || '';
             const padding = tag.backgroundPadding || '';
+            const bgHeight = tag.backgroundHeight || '';
             const textColorStyle = textColor ? `background-color: ${textColor};` : 'background-color: transparent;';
             const bgColorStyle = bgColor ? `background-color: ${bgColor};` : 'background-color: transparent;';
             
@@ -1660,6 +1686,7 @@ function renderCustomTagList(template) {
                                 <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="배경 색상 미리보기"></div>
                             </div>
                             <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                            <input type="number" class="markdown-height-input custom-tag-height-input" data-id="${tag.id}" value="${bgHeight}" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
                         </div>
                     </div>
                 </div>
@@ -2477,6 +2504,16 @@ function applyMarkdownCustomFontsInternal() {
     const fonts = settings?.fonts || [];
     const markdownCss = [];
     
+    // 배경 스타일 생성 헬퍼 함수
+    const createBackgroundStyle = (backgroundColor, padding, height) => {
+        if (!backgroundColor) return '';
+        if (height && height < 100) {
+            return `  background: linear-gradient(to top, ${backgroundColor} ${height}%, transparent ${height}%) !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n`;
+        } else {
+            return `  background-color: ${backgroundColor} !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n`;
+        }
+    };
+    
     // 대화문 (q, blockquote)
     if (markdownCustom.dialogue?.fontName || markdownCustom.dialogue?.backgroundColor) {
         const font = fonts.find(f => f.name === markdownCustom.dialogue.fontName);
@@ -2484,9 +2521,10 @@ function applyMarkdownCustomFontsInternal() {
         const fontSize = markdownCustom.dialogue.fontSize;
         const backgroundColor = markdownCustom.dialogue.backgroundColor;
         const padding = markdownCustom.dialogue.backgroundPadding || 2;
+        const bgHeight = markdownCustom.dialogue.backgroundHeight;
         const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
-        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
+        const backgroundColorStyle = createBackgroundStyle(backgroundColor, padding, bgHeight);
         
         markdownCss.push(`
 /* 대화문 - "따옴표"로 둘러싸인 텍스트 */
@@ -2504,9 +2542,10 @@ ${fontSizeStyle}${backgroundColorStyle}}
         const fontSize = markdownCustom.italic.fontSize;
         const backgroundColor = markdownCustom.italic.backgroundColor;
         const padding = markdownCustom.italic.backgroundPadding || 2;
+        const bgHeight = markdownCustom.italic.backgroundHeight;
         const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
-        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
+        const backgroundColorStyle = createBackgroundStyle(backgroundColor, padding, bgHeight);
         
         markdownCss.push(`
 /* 이탤릭체 - *별표 하나*로 둘러싸인 텍스트 */
@@ -2523,9 +2562,10 @@ ${fontSizeStyle}${backgroundColorStyle}}
         const fontSize = markdownCustom.underline.fontSize;
         const backgroundColor = markdownCustom.underline.backgroundColor;
         const padding = markdownCustom.underline.backgroundPadding || 2;
+        const bgHeight = markdownCustom.underline.backgroundHeight;
         const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
-        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
+        const backgroundColorStyle = createBackgroundStyle(backgroundColor, padding, bgHeight);
         
         markdownCss.push(`
 /* 밑줄 - __밑줄__로 둘러싸인 텍스트 */
@@ -2542,9 +2582,10 @@ ${fontSizeStyle}${backgroundColorStyle}}
         const fontSize = markdownCustom.strong.fontSize;
         const backgroundColor = markdownCustom.strong.backgroundColor;
         const padding = markdownCustom.strong.backgroundPadding || 2;
+        const bgHeight = markdownCustom.strong.backgroundHeight;
         const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
-        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: ${padding}px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
+        const backgroundColorStyle = createBackgroundStyle(backgroundColor, padding, bgHeight);
         
         markdownCss.push(`
 /* 강조 - **별표 둘**로 둘러싸인 텍스트 */
@@ -2604,7 +2645,8 @@ function applyTempUILineHeight(height) {
 }
 
 function applyTempUIFontColor(color) {
-    tempUiFontColor = (!color || /^(none|transparent)$/i.test(color)) ? null : color;
+    // 빈 값이나 transparent는 빈 문자열로 저장 (null이 아님 - 저장 시 구분 필요)
+    tempUiFontColor = (!color || /^(none|transparent)$/i.test(color)) ? '' : color;
     updateUIFont();
 }
 
@@ -3104,6 +3146,77 @@ function setupEventListeners(template) {
                 const currentPadding = currentPreset?.markdownCustom?.[type]?.backgroundPadding ?? settings.markdownCustom?.[type]?.backgroundPadding;
                 if (currentPadding) {
                     $(this).val(currentPadding);
+                } else {
+                    $(this).val('');
+                }
+            }
+        });
+        
+        // 배경 높이 입력 이벤트
+        template.find(`#markdown-${type}-height-input`).off('change').on('change', function() {
+            const height = parseInt($(this).val());
+            
+            if (!isNaN(height) && height >= 1 && height <= 100) {
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                
+                if (currentPreset) {
+                    if (!currentPreset.markdownCustom) {
+                        currentPreset.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null }
+                        };
+                    }
+                    if (!currentPreset.markdownCustom[type]) {
+                        currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null };
+                    }
+                    currentPreset.markdownCustom[type].backgroundHeight = height;
+                } else {
+                    if (!settings.markdownCustom) {
+                        settings.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null }
+                        };
+                    }
+                    if (!settings.markdownCustom[type]) {
+                        settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, backgroundHeight: null };
+                    }
+                    settings.markdownCustom[type].backgroundHeight = height;
+                }
+                
+                saveSettings();
+                applyMarkdownCustomFonts();
+            } else if (isNaN(height) || $(this).val() === '') {
+                // 빈 값이면 null로 저장 (100% 높이 사용)
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                
+                if (currentPreset) {
+                    if (currentPreset.markdownCustom && currentPreset.markdownCustom[type]) {
+                        currentPreset.markdownCustom[type].backgroundHeight = null;
+                    }
+                } else {
+                    if (settings.markdownCustom && settings.markdownCustom[type]) {
+                        settings.markdownCustom[type].backgroundHeight = null;
+                    }
+                }
+                
+                saveSettings();
+                applyMarkdownCustomFonts();
+            } else if (height < 1 || height > 100) {
+                alert('배경 높이는 1%에서 100% 사이여야 합니다.');
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                const currentHeight = currentPreset?.markdownCustom?.[type]?.backgroundHeight ?? settings.markdownCustom?.[type]?.backgroundHeight;
+                if (currentHeight) {
+                    $(this).val(currentHeight);
                 } else {
                     $(this).val('');
                 }
@@ -3882,6 +3995,27 @@ function setupCustomTagEventListeners(template) {
         }
     });
     
+    // 높이 입력 필드 이벤트
+    template.find('.custom-tag-height-input').off('change').on('change', function() {
+        const tagId = $(this).data('id');
+        const height = parseInt($(this).val());
+        
+        if (!isNaN(height) && height >= 1 && height <= 100) {
+            updateCustomTagBackgroundHeight(template, tagId, height);
+        } else if (isNaN(height) || $(this).val() === '') {
+            updateCustomTagBackgroundHeight(template, tagId, null);
+        } else if (height < 1 || height > 100) {
+            alert('배경 높이는 1%에서 100% 사이여야 합니다.');
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            const tag = currentPreset?.customTags?.find(t => t.id === tagId);
+            if (tag) {
+                $(this).val(tag.backgroundHeight || '');
+            }
+        }
+    });
+    
     // 색상 유효성 검사 함수
     function isValidColor(color) {
         if (!color) return true;
@@ -4013,6 +4147,25 @@ function updateCustomTagPadding(template, tagId, padding) {
     }
 }
 
+// 태그 커스텀 배경 높이 업데이트
+function updateCustomTagBackgroundHeight(template, tagId, height) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        tag.backgroundHeight = height;
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
 // 테마 규칙 이벤트 리스너 설정
 function setupThemeRuleEventListeners(template) {
     template.find('.remove-theme-rule-btn').off('click').on('click', function() {
@@ -4092,8 +4245,6 @@ function saveCurrentSettings() {
     }
     if (tempUiFontColor !== null) {
         settings.uiFontColor = tempUiFontColor;
-    } else if (tempUiFontColor === null && settings.uiFontColor === undefined) {
-        settings.uiFontColor = '';
     }
     if (tempChatFontSize !== null) {
         settings.chatFontSize = tempChatFontSize;
@@ -4157,8 +4308,6 @@ function saveCurrentPreset() {
         }
         if (tempUiFontColor !== null) {
             settings.uiFontColor = tempUiFontColor;
-        } else if (tempUiFontColor === null && settings.uiFontColor === undefined) {
-            settings.uiFontColor = '';
         }
         if (tempChatFontSize !== null) {
             settings.chatFontSize = tempChatFontSize;
