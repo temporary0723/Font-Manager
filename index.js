@@ -363,6 +363,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                 tagName: tag.tagName,
                 fontFamily: actualFontFamily,
                 fontSize: fontSize,
+                backgroundColor: tag.backgroundColor || null,
+                backgroundPadding: tag.backgroundPadding || 2,
                 regex: tagRegex
             };
         });
@@ -478,6 +480,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                 // 원본 메시지에서 이 텍스트를 포함하는 태그 블록 찾기
                 let matchedFontFamily = null;
                 let matchedFontSize = null;
+                let matchedTag = null;
                 let bestMatchLength = 0; // 가장 긴 매칭을 찾기 위한 변수
                 
                 tagConfigs.forEach(tagConfig => {
@@ -494,6 +497,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                         if (tagContentNormalized === spanTextNormalized) {
                             matchedFontFamily = tagConfig.fontFamily;
                             matchedFontSize = tagConfig.fontSize;
+                            matchedTag = tagConfig;
                             break;
                         }
                         
@@ -504,6 +508,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                             if (matchLength > bestMatchLength) {
                                 matchedFontFamily = tagConfig.fontFamily;
                                 matchedFontSize = tagConfig.fontSize;
+                                matchedTag = tagConfig;
                                 bestMatchLength = matchLength;
                             }
                         }
@@ -514,11 +519,14 @@ function applyCustomTagFonts(forceRefresh = false) {
                 if (matchedFontFamily) {
                     // 폰트 스타일 미리 생성 (original과 translated에서 공통 사용)
                     const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
+                    const matchedBgColor = matchedTag?.backgroundColor;
+                    const matchedPadding = matchedTag?.backgroundPadding || 2;
+                    const bgColorStyle = matchedBgColor ? ` background-color: ${matchedBgColor} !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
                     
                     // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
                     if (!span.querySelector('[data-custom-tag-font]')) {
                         const contentWithBreaks = span.innerHTML.replace(/\n/g, '<br>');
-                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
+                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
                         
                         // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                         if (span.innerHTML.trim() !== newHTML.trim()) {
@@ -533,7 +541,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                         const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
                             const translatedContent = translatedTextSpan.innerHTML.replace(/\n/g, '<br>');
-                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}">${translatedContent}</span>`;
+                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${translatedContent}</span>`;
                             
                             // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                             if (translatedTextSpan.innerHTML.trim() !== newTranslatedHTML.trim()) {
@@ -566,7 +574,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const contentWithBreaks = content.replace(/\n/g, '<br>');
                     // 태그 내용을 span으로 감싸서 폰트 적용
                     const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
-                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}">${contentWithBreaks}</span>`;
+                    const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
                 });
             });
             
@@ -1457,6 +1466,10 @@ function renderCustomTagList(template) {
                 fontOptions += `<option value="${font.name}" ${selected}>${font.name}</option>`;
             });
             
+            const bgColor = tag.backgroundColor || '';
+            const padding = tag.backgroundPadding || '';
+            const bgColorStyle = bgColor ? `background-color: ${bgColor};` : 'background-color: transparent;';
+            
             listHtml += `
                 <div class="custom-tag-item">
                     <div class="custom-tag-info">
@@ -1469,6 +1482,13 @@ function renderCustomTagList(template) {
                     <div class="custom-tag-controls">
                         <label class="custom-tag-size-label">크기:</label>
                         <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" title="폰트 크기 (px)">
+                    </div>
+                    <div class="custom-tag-controls">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
                         <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -3279,6 +3299,8 @@ function setupEventListeners(template) {
     template.find('#add-custom-tag-btn').off('click').on('click', function() {
         const tagName = template.find('#custom-tag-name-input').val().trim();
         const fontName = template.find('#custom-tag-font-dropdown').val();
+        const bgColor = template.find('#custom-tag-bg-color-text').val().trim();
+        const padding = parseInt(template.find('#custom-tag-padding-input').val());
         
         if (!tagName) {
             alert('태그 이름을 입력해주세요.');
@@ -3316,7 +3338,9 @@ function setupEventListeners(template) {
             id: generateId(),
             tagName: tagNameUpper,
             fontName: fontName,
-            fontSize: defaultFontSize
+            fontSize: defaultFontSize,
+            backgroundColor: bgColor || null,
+            backgroundPadding: (!isNaN(padding) && padding >= 1 && padding <= 10) ? padding : null
         };
         
         if (!currentPreset.customTags) {
@@ -3327,6 +3351,9 @@ function setupEventListeners(template) {
         // 입력 필드 초기화
         template.find('#custom-tag-name-input').val('');
         template.find('#custom-tag-font-dropdown').val('');
+        template.find('#custom-tag-bg-color-text').val('');
+        template.find('#custom-tag-bg-color-preview').css('background-color', 'transparent');
+        template.find('#custom-tag-padding-input').val('');
         
         // 리스트 업데이트
         renderCustomTagList(template);
@@ -3506,6 +3533,84 @@ function setupCustomTagEventListeners(template) {
         
         updateCustomTagFontSize(template, tagId, newSize);
     });
+    
+    // 배경색 입력 필드 이벤트
+    let bgColorTimeout = {};
+    template.find('.custom-tag-bg-color-input').off('input blur').on('input', function() {
+        const tagId = $(this).data('id');
+        const inputValue = $(this).val().trim();
+        const preview = $(this).siblings('.markdown-bg-color-preview');
+        
+        clearTimeout(bgColorTimeout[tagId]);
+        bgColorTimeout[tagId] = setTimeout(() => {
+            if (!inputValue || /^(none|transparent)$/i.test(inputValue) || isValidColor(inputValue)) {
+                if (!inputValue || /^(none|transparent)$/i.test(inputValue)) {
+                    preview.css('background-color', 'transparent');
+                } else {
+                    preview.css('background-color', inputValue);
+                }
+                updateCustomTagBackgroundColor(template, tagId, inputValue);
+            }
+        }, 500);
+    }).on('blur', function() {
+        const tagId = $(this).data('id');
+        const inputValue = $(this).val().trim();
+        const preview = $(this).siblings('.markdown-bg-color-preview');
+        
+        if (!inputValue || /^(none|transparent)$/i.test(inputValue) || isValidColor(inputValue)) {
+            if (!inputValue || /^(none|transparent)$/i.test(inputValue)) {
+                preview.css('background-color', 'transparent');
+            } else {
+                preview.css('background-color', inputValue);
+            }
+            clearTimeout(bgColorTimeout[tagId]);
+            updateCustomTagBackgroundColor(template, tagId, inputValue);
+        } else {
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            const tag = currentPreset?.customTags?.find(t => t.id === tagId);
+            const savedColor = tag?.backgroundColor || '';
+            $(this).val(savedColor);
+            if (!savedColor) {
+                preview.css('background-color', 'transparent');
+            } else {
+                preview.css('background-color', savedColor);
+            }
+        }
+    });
+    
+    // 여백 입력 필드 이벤트
+    template.find('.custom-tag-padding-input').off('change').on('change', function() {
+        const tagId = $(this).data('id');
+        const padding = parseInt($(this).val());
+        
+        if (!isNaN(padding) && padding >= 1 && padding <= 10) {
+            updateCustomTagPadding(template, tagId, padding);
+        } else if (isNaN(padding) || $(this).val() === '') {
+            updateCustomTagPadding(template, tagId, null);
+        } else if (padding < 1 || padding > 10) {
+            alert('배경 여백은 1px에서 10px 사이여야 합니다.');
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            const tag = currentPreset?.customTags?.find(t => t.id === tagId);
+            if (tag) {
+                $(this).val(tag.backgroundPadding || '');
+            }
+        }
+    });
+    
+    // 색상 유효성 검사 함수
+    function isValidColor(color) {
+        if (!color) return true;
+        color = color.trim();
+        if (/^(none|transparent)$/i.test(color)) return true;
+        if (/^#([0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(color)) return true;
+        if (/^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i.test(color)) return true;
+        if (/^rgba\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*([0-1]?(\.\d+)?|1(\.0+)?)\s*\)$/i.test(color)) return true;
+        return false;
+    }
 }
 
 // 태그 커스텀 삭제
@@ -3563,6 +3668,44 @@ function updateCustomTagFont(template, tagId, fontName) {
     
     if (tag) {
         tag.fontName = fontName || null;
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
+// 태그 커스텀 배경색 업데이트
+function updateCustomTagBackgroundColor(template, tagId, backgroundColor) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        tag.backgroundColor = (!backgroundColor || /^(none|transparent)$/i.test(backgroundColor)) ? null : backgroundColor;
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
+// 태그 커스텀 여백 업데이트
+function updateCustomTagPadding(template, tagId, padding) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        tag.backgroundPadding = padding;
         saveSettings();
         
         // 메시지에 즉시 적용 (강제 새로고침)
