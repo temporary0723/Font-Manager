@@ -1716,20 +1716,20 @@
 .markdown-color-picker-wrapper {
     display: flex;
     align-items: center;
-    gap: 5px;
-    min-width: 110px;
+    gap: 6px;
+    min-width: 175px;
 }
 
 /* 색상 텍스트 입력 */
 .markdown-bg-color-text {
-    width: 75px;
+    width: 140px;
     padding: 8px;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     background-color: var(--black50a);
     color: var(--SmartThemeBodyColor);
     font-family: 'Courier New', monospace;
-    font-size: calc(var(--mainFontSize) * 0.85);
+    font-size: calc(var(--mainFontSize) * 0.8);
     transition: all 0.2s ease;
     text-align: center;
 }
@@ -1756,21 +1756,29 @@
     height: 28px;
     border: 2px solid var(--SmartThemeBorderColor);
     border-radius: 4px;
-    cursor: pointer;
     transition: all 0.2s ease;
-    background-color: #141e1e;
+    background-color: rgba(20, 20, 30, 0.6);
     flex-shrink: 0;
+    position: relative;
 }
 
-.markdown-bg-color-preview:hover {
-    border-color: var(--SmartThemeQuoteColor);
-    transform: scale(1.1);
-    box-shadow: 0 0 8px rgba(var(--SmartThemeQuoteColorRGB), 0.4);
-}
-
-/* 숨겨진 color input */
-.markdown-bg-color-input-hidden {
-    display: none;
+/* 투명도 표시를 위한 체크 패턴 배경 */
+.markdown-bg-color-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(45deg, #ccc 25%, transparent 25%), 
+        linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #ccc 75%), 
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    border-radius: 2px;
+    z-index: -1;
 }
 
 /* 마크다운 섹션 반응형 디자인 */

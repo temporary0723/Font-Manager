@@ -1314,14 +1314,12 @@ function renderMarkdownCustomSection(template) {
         }
         
         // 배경색 설정
-        const bgColor = markdownCustom[type]?.backgroundColor || '#141e1e';
+        const bgColor = markdownCustom[type]?.backgroundColor || 'rgba(20, 20, 30, 0.6)';
         const bgColorText = template.find(`#markdown-${type}-bg-color-text`);
         const bgColorPreview = template.find(`#markdown-${type}-bg-color-preview`);
-        const bgColorInput = template.find(`#markdown-${type}-bg-color-input`);
         
         bgColorText.val(bgColor);
         bgColorPreview.css('background-color', bgColor);
-        bgColorInput.val(bgColor);
     });
     
     // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
@@ -2701,7 +2699,6 @@ function setupEventListeners(template) {
         // 배경색 관련 요소들
         const bgColorText = template.find(`#markdown-${type}-bg-color-text`);
         const bgColorPreview = template.find(`#markdown-${type}-bg-color-preview`);
-        const bgColorInput = template.find(`#markdown-${type}-bg-color-input`);
         
         // 배경색 저장 함수
         const saveBgColor = (bgColor) => {
@@ -2741,11 +2738,27 @@ function setupEventListeners(template) {
             applyMarkdownCustomFonts();
         };
         
-        // 색상 유효성 검사 함수
+        // 색상 유효성 검사 함수 (hex, rgb, rgba 모두 지원)
         const isValidColor = (color) => {
             if (!color) return false;
-            // hex 형식 검사 (#000 ~ #ffffff)
-            return /^#([0-9A-Fa-f]{3}){1,2}$/.test(color);
+            color = color.trim();
+            
+            // hex 형식 (#000 ~ #ffffff, #00000000 ~ #ffffffff)
+            if (/^#([0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(color)) {
+                return true;
+            }
+            
+            // rgb 형식 (rgb(255, 255, 255))
+            if (/^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i.test(color)) {
+                return true;
+            }
+            
+            // rgba 형식 (rgba(255, 255, 255, 0.5))
+            if (/^rgba\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*([0-1]?(\.\d+)?|1(\.0+)?)\s*\)$/i.test(color)) {
+                return true;
+            }
+            
+            return false;
         };
         
         // 텍스트 입력 이벤트 (debounce 적용)
@@ -2757,7 +2770,6 @@ function setupEventListeners(template) {
             textInputTimeout = setTimeout(() => {
                 if (isValidColor(inputValue)) {
                     bgColorPreview.css('background-color', inputValue);
-                    bgColorInput.val(inputValue);
                     saveBgColor(inputValue);
                 }
             }, 500);
@@ -2769,7 +2781,6 @@ function setupEventListeners(template) {
             
             if (isValidColor(inputValue)) {
                 bgColorPreview.css('background-color', inputValue);
-                bgColorInput.val(inputValue);
                 clearTimeout(textInputTimeout);
                 saveBgColor(inputValue);
             } else if (inputValue && !isValidColor(inputValue)) {
@@ -2779,22 +2790,10 @@ function setupEventListeners(template) {
                 const currentPreset = presets.find(p => p.id === currentPresetId);
                 const savedColor = currentPreset?.markdownCustom?.[type]?.backgroundColor || 
                                  settings.markdownCustom?.[type]?.backgroundColor || 
-                                 '#141e1e';
+                                 'rgba(20, 20, 30, 0.6)';
                 $(this).val(savedColor);
+                bgColorPreview.css('background-color', savedColor);
             }
-        });
-        
-        // 프리뷰 클릭 시 color picker 열기
-        bgColorPreview.off('click').on('click', function() {
-            bgColorInput.trigger('click');
-        });
-        
-        // 숨겨진 color input 변경 이벤트
-        bgColorInput.off('change').on('change', function() {
-            const bgColor = $(this).val();
-            bgColorText.val(bgColor);
-            bgColorPreview.css('background-color', bgColor);
-            saveBgColor(bgColor);
         });
     });
     
