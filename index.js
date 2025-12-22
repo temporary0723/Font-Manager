@@ -543,6 +543,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                 if (matchedFontFamily) {
                     // 폰트 스타일 미리 생성 (original과 translated에서 공통 사용)
                     const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
+                    const matchedTextColor = matchedTag?.textColor;
+                    const textColorStyle = matchedTextColor ? ` color: ${matchedTextColor} !important;` : '';
                     const matchedBgColor = matchedTag?.backgroundColor;
                     const matchedPadding = matchedTag?.backgroundPadding || 2;
                     const bgColorStyle = matchedBgColor ? ` background-color: ${matchedBgColor} !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
@@ -567,7 +569,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                     // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
                     if (!span.querySelector('[data-custom-tag-font]')) {
                         const contentCleaned = cleanupContent(span.innerHTML);
-                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentCleaned}</span>`;
+                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${contentCleaned}</span>`;
                         
                         // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                         if (span.innerHTML.trim() !== newHTML.trim()) {
@@ -582,7 +584,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                         const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
                             const translatedContentCleaned = cleanupContent(translatedTextSpan.innerHTML);
-                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${translatedContentCleaned}</span>`;
+                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${translatedContentCleaned}</span>`;
                             
                             // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                             if (translatedTextSpan.innerHTML.trim() !== newTranslatedHTML.trim()) {
