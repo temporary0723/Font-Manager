@@ -561,28 +561,28 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: DOM의 innerHTML 기반 처리
-            // 이미 마크다운이 변환된 HTML을 사용
-            let currentHTML = messageContent.innerHTML;
-            let processedContent = currentHTML;
-            let hasChanges = false;
+            // 일반 모드 또는 사용 안 함: sourceText 기반 처리
+            // display_text가 있으면 사용 (이미 마크다운 변환됨)
+            // 없으면 DOM에서 현재 HTML을 읽어 사용 (마크다운이 변환된 상태)
+            let sourceText;
+            if (hasDisplayText) {
+                sourceText = message.extra.display_text; // 이미 마크다운 변환됨
+            } else {
+                // DOM에서 현재 내용을 읽어 마크다운이 변환된 상태를 사용
+                sourceText = messageContent.innerHTML;
+            }
             
-            // 원본 메시지에서 태그를 찾기 (태그 매칭용)
-            const sourceText = message.mes;
+            let processedContent = sourceText;
+            let hasChanges = false;
             
             // 모든 태그에 대해 한 번에 처리
             tagConfigs.forEach(tagConfig => {
-                // 먼저 원본 메시지에서 태그가 있는지 확인
-                const sourceMatches = [...sourceText.matchAll(tagConfig.regex)];
-                if (sourceMatches.length === 0) return;
-                
-                // HTML에서도 태그를 찾아 처리
                 processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
                     hasChanges = true;
-                    // 태그 내용이 이미 HTML일 수 있으므로 확인
+                    // 태그 내용 처리
                     let processedTagContent = content.trim();
                     
-                    // HTML 태그가 없는 경우에만 줄바꿈을 <br>로 변환
+                    // HTML 태그가 없는 경우에만 줄바꿈을 처리
                     if (!/<[^>]+>/.test(processedTagContent)) {
                         // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
                         processedTagContent = processedTagContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
@@ -607,7 +607,10 @@ function applyCustomTagFonts(forceRefresh = false) {
             // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
                 // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
-                if (currentHTML.trim() !== processedContent.trim()) {
+                const currentHTML = messageContent.innerHTML.trim();
+                const newHTML = processedContent.trim();
+                
+                if (currentHTML !== newHTML) {
                     messageContent.innerHTML = processedContent;
                 }
                 messageContent.setAttribute('data-tag-processed', 'true');
