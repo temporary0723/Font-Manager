@@ -561,44 +561,53 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: sourceText 기반 처리
-            let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
-            let processedContent = sourceText;
+            // 일반 모드 또는 사용 안 함: DOM의 innerHTML 기반 처리
+            // 이미 마크다운이 변환된 HTML을 사용
+            let currentHTML = messageContent.innerHTML;
+            let processedContent = currentHTML;
             let hasChanges = false;
+            
+            // 원본 메시지에서 태그를 찾기 (태그 매칭용)
+            const sourceText = message.mes;
             
             // 모든 태그에 대해 한 번에 처리
             tagConfigs.forEach(tagConfig => {
+                // 먼저 원본 메시지에서 태그가 있는지 확인
+                const sourceMatches = [...sourceText.matchAll(tagConfig.regex)];
+                if (sourceMatches.length === 0) return;
+                
+                // HTML에서도 태그를 찾아 처리
                 processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
                     hasChanges = true;
-                    // 앞뒤 공백 제거 후 줄바꿈을 <br>로 변환하여 유지
-                    const contentWithBreaks = content.trim().replace(/\n/g, '<br>');
+                    // 태그 내용이 이미 HTML일 수 있으므로 확인
+                    let processedTagContent = content.trim();
+                    
+                    // HTML 태그가 없는 경우에만 줄바꿈을 <br>로 변환
+                    if (!/<[^>]+>/.test(processedTagContent)) {
+                        // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
+                        processedTagContent = processedTagContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
+                        // 남은 단일 줄바꿈을 <br>로 변환
+                        processedTagContent = processedTagContent.replace(/\n/g, '<br>');
+                        // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
+                        const paragraphs = processedTagContent.split('|||PARAGRAPH|||').filter(p => p.trim());
+                        if (paragraphs.length > 1) {
+                            processedTagContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
+                            // 빈 p 태그 제거
+                            processedTagContent = processedTagContent.replace(/<p>\s*<\/p>/g, '');
+                        }
+                    }
+                    
                     // 태그 내용을 span으로 감싸서 폰트 적용
                     const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
                     const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
+                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${processedTagContent}</span>`;
                 });
             });
             
             // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
-                // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
-                processedContent = processedContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
-                // 남은 단일 줄바꿈을 <br>로 변환
-                processedContent = processedContent.replace(/\n/g, '<br>');
-                // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
-                const paragraphs = processedContent.split('|||PARAGRAPH|||').filter(p => p.trim());
-                if (paragraphs.length > 0) {
-                    processedContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
-                }
-                // 빈 p 태그 제거
-                processedContent = processedContent.replace(/<p>\s*<\/p>/g, '');
-                
                 // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
-                // 이미 올바르게 처리된 경우 innerHTML 변경을 피해 커서 초기화 방지
-                const currentHTML = messageContent.innerHTML.trim();
-                const newHTML = processedContent.trim();
-                
-                if (currentHTML !== newHTML) {
+                if (currentHTML.trim() !== processedContent.trim()) {
                     messageContent.innerHTML = processedContent;
                 }
                 messageContent.setAttribute('data-tag-processed', 'true');
