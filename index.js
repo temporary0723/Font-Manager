@@ -4070,34 +4070,35 @@ function updateAllFonts() {
 
 // SillyTavern 이벤트 리스닝 설정
 function setupSillyTavernEventListeners() {
+    // 이벤트 디바운싱을 위한 타이머
+    let eventDebounceTimer = null;
+    const debounceApply = (forceRefresh = false, delay = 100) => {
+        if (eventDebounceTimer) {
+            clearTimeout(eventDebounceTimer);
+        }
+        eventDebounceTimer = setTimeout(() => {
+            applyCustomTagFonts(forceRefresh);
+            eventDebounceTimer = null;
+        }, delay);
+    };
+    
     // 채팅 변경 시 (채팅방 전환, 새 채팅 로드)
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        console.log('[Font Manager] CHAT_CHANGED event');
-        // 약간의 지연 후 태그 커스텀 적용 (DOM이 완전히 렌더링된 후)
-        setTimeout(() => {
-            applyCustomTagFonts(true); // forceRefresh로 모든 메시지 재처리
-        }, 500);
+        debounceApply(true, 500); // forceRefresh로 모든 메시지 재처리
     });
     
     // 메시지 렌더링 완료 시 (AI 메시지)
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId) => {
-        console.log('[Font Manager] CHARACTER_MESSAGE_RENDERED event:', messageId);
-        setTimeout(() => {
-            applyCustomTagFonts();
-        }, 100);
+        debounceApply(false, 100);
     });
     
     // 메시지 렌더링 완료 시 (사용자 메시지)
     eventSource.on(event_types.USER_MESSAGE_RENDERED, (messageId) => {
-        console.log('[Font Manager] USER_MESSAGE_RENDERED event:', messageId);
-        setTimeout(() => {
-            applyCustomTagFonts();
-        }, 100);
+        debounceApply(false, 100);
     });
     
     // 메시지 스와이프 시
     eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
-        console.log('[Font Manager] MESSAGE_SWIPED event:', messageId);
         // 스와이프된 메시지의 처리 상태 제거
         const mesElement = document.querySelector(`.mes[mesid="${messageId}"]`);
         if (mesElement) {
@@ -4107,14 +4108,11 @@ function setupSillyTavernEventListeners() {
                 processedMessages.delete(mesElement);
             }
         }
-        setTimeout(() => {
-            applyCustomTagFonts();
-        }, 100);
+        debounceApply(false, 100);
     });
     
     // 메시지 업데이트 시 (편집 등)
     eventSource.on(event_types.MESSAGE_UPDATED, (messageId) => {
-        console.log('[Font Manager] MESSAGE_UPDATED event:', messageId);
         // 업데이트된 메시지의 처리 상태 제거
         const mesElement = document.querySelector(`.mes[mesid="${messageId}"]`);
         if (mesElement) {
@@ -4124,9 +4122,7 @@ function setupSillyTavernEventListeners() {
                 processedMessages.delete(mesElement);
             }
         }
-        setTimeout(() => {
-            applyCustomTagFonts();
-        }, 100);
+        debounceApply(false, 100);
     });
 }
 
