@@ -335,6 +335,68 @@
     white-space: nowrap;
 }
 
+/* 폰트 색상 입력 행 */
+.font-color-row {
+    gap: 10px;
+}
+
+.font-color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.font-color-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: monospace;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.font-color-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.font-color-input:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.font-color-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.6;
+    font-size: calc(var(--mainFontSize) * 0.8);
+}
+
+.font-color-preview {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.font-color-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-conic-gradient(#808080 0% 25%, #fff 0% 50%) 50% / 8px 8px;
+    z-index: -1;
+}
+
 /* 기본값 버튼 행 */
 .default-button-row {
     display: flex;
@@ -884,6 +946,21 @@
         max-width: 60px;
         font-size: calc(var(--mainFontSize) * 0.8);
         padding: 3px 5px;
+    }
+    
+    .font-color-input-wrapper {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .font-color-input {
+        min-width: 80px;
+        font-size: calc(var(--mainFontSize) * 0.85);
+    }
+    
+    .font-color-preview {
+        width: 24px;
+        height: 24px;
     }
     
     .default-btn {
