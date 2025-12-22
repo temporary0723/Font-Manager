@@ -1712,6 +1712,28 @@
     opacity: 0.7;
 }
 
+.markdown-bg-color-input {
+    width: 50px;
+    height: 36px;
+    padding: 2px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.markdown-bg-color-input:hover {
+    border-color: var(--SmartThemeQuoteColor);
+    transform: scale(1.05);
+}
+
+.markdown-bg-color-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
 /* 마크다운 섹션 반응형 디자인 */
 @media (max-width: 600px) {
     .markdown-font-header {
@@ -1730,7 +1752,8 @@
     }
     
     .markdown-font-dropdown,
-    .markdown-size-input {
+    .markdown-size-input,
+    .markdown-bg-color-input {
         width: 100%;
     }
 }

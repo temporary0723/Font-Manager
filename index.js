@@ -1277,10 +1277,10 @@ function renderMarkdownCustomSection(template) {
     
     // 마크다운 설정 가져오기
     const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom ?? {
-        dialogue: { fontName: null, fontSize: null },
-        italic: { fontName: null, fontSize: null },
-        underline: { fontName: null, fontSize: null },
-        strong: { fontName: null, fontSize: null }
+        dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+        italic: { fontName: null, fontSize: null, backgroundColor: null },
+        underline: { fontName: null, fontSize: null, backgroundColor: null },
+        strong: { fontName: null, fontSize: null, backgroundColor: null }
     };
     
     // 각 마크다운 타입별 설정
@@ -1311,6 +1311,15 @@ function renderMarkdownCustomSection(template) {
             sizeInput.val(fontSize);
         } else {
             sizeInput.val('');
+        }
+        
+        // 배경색 설정
+        const bgColorInput = template.find(`#markdown-${type}-bg-color-input`);
+        const bgColor = markdownCustom[type]?.backgroundColor;
+        if (bgColor) {
+            bgColorInput.val(bgColor);
+        } else {
+            bgColorInput.val('#141e1e');  // 기본값
         }
     });
     
@@ -2260,67 +2269,75 @@ function applyMarkdownCustomFontsInternal() {
     const markdownCss = [];
     
     // 대화문 (q, blockquote)
-    if (markdownCustom.dialogue?.fontName) {
+    if (markdownCustom.dialogue?.fontName || markdownCustom.dialogue?.backgroundColor) {
         const font = fonts.find(f => f.name === markdownCustom.dialogue.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.dialogue.fontName;
         const fontSize = markdownCustom.dialogue.fontSize;
+        const backgroundColor = markdownCustom.dialogue.backgroundColor;
+        const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: 1px 2px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
         
         markdownCss.push(`
 /* 대화문 - "따옴표"로 둘러싸인 텍스트 */
 html body .mes_text q,
 html body .mes_text blockquote {
-  font-family: "${fontFamily}" !important;
-  font-style: normal !important;
-${fontSizeStyle}}
+${fontFamilyStyle}  font-style: normal !important;
+${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
     // 이탤릭체 (em)
-    if (markdownCustom.italic?.fontName) {
+    if (markdownCustom.italic?.fontName || markdownCustom.italic?.backgroundColor) {
         const font = fonts.find(f => f.name === markdownCustom.italic.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.italic.fontName;
         const fontSize = markdownCustom.italic.fontSize;
+        const backgroundColor = markdownCustom.italic.backgroundColor;
+        const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: 1px 2px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
         
         markdownCss.push(`
 /* 이탤릭체 - *별표 하나*로 둘러싸인 텍스트 */
 html body .mes_text em {
-  font-family: "${fontFamily}" !important;
-  font-style: italic !important;
-${fontSizeStyle}}
+${fontFamilyStyle}  font-style: italic !important;
+${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
     // 밑줄 (u)
-    if (markdownCustom.underline?.fontName) {
+    if (markdownCustom.underline?.fontName || markdownCustom.underline?.backgroundColor) {
         const font = fonts.find(f => f.name === markdownCustom.underline.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.underline.fontName;
         const fontSize = markdownCustom.underline.fontSize;
+        const backgroundColor = markdownCustom.underline.backgroundColor;
+        const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: 1px 2px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
         
         markdownCss.push(`
 /* 밑줄 - __밑줄__로 둘러싸인 텍스트 */
 html body .mes_text u {
-  font-family: "${fontFamily}" !important;
-  text-decoration: underline !important;
-${fontSizeStyle}}
+${fontFamilyStyle}  text-decoration: underline !important;
+${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
     // 강조 (strong)
-    if (markdownCustom.strong?.fontName) {
+    if (markdownCustom.strong?.fontName || markdownCustom.strong?.backgroundColor) {
         const font = fonts.find(f => f.name === markdownCustom.strong.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.strong.fontName;
         const fontSize = markdownCustom.strong.fontSize;
+        const backgroundColor = markdownCustom.strong.backgroundColor;
+        const fontFamilyStyle = fontFamily ? `  font-family: "${fontFamily}" !important;\n` : '';
         const fontSizeStyle = fontSize ? `  font-size: ${fontSize}px !important;\n` : '';
+        const backgroundColorStyle = backgroundColor ? `  background-color: ${backgroundColor} !important;\n  padding: 1px 2px;\n  border-radius: 3px;\n  display: inline;\n  box-decoration-break: clone;\n  -webkit-box-decoration-break: clone;\n` : '';
         
         markdownCss.push(`
 /* 강조 - **별표 둘**로 둘러싸인 텍스트 */
 html body .mes_text strong {
-  font-family: "${fontFamily}" !important;
-  font-weight: bold !important;
-${fontSizeStyle}}
+${fontFamilyStyle}  font-weight: bold !important;
+${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
@@ -2598,21 +2615,27 @@ function setupEventListeners(template) {
             if (currentPreset) {
                 if (!currentPreset.markdownCustom) {
                     currentPreset.markdownCustom = {
-                        dialogue: { fontName: null, fontSize: null },
-                        italic: { fontName: null, fontSize: null },
-                        underline: { fontName: null, fontSize: null },
-                        strong: { fontName: null, fontSize: null }
+                        dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                        italic: { fontName: null, fontSize: null, backgroundColor: null },
+                        underline: { fontName: null, fontSize: null, backgroundColor: null },
+                        strong: { fontName: null, fontSize: null, backgroundColor: null }
                     };
+                }
+                if (!currentPreset.markdownCustom[type]) {
+                    currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
                 }
                 currentPreset.markdownCustom[type].fontName = fontName || null;
             } else {
                 if (!settings.markdownCustom) {
                     settings.markdownCustom = {
-                        dialogue: { fontName: null, fontSize: null },
-                        italic: { fontName: null, fontSize: null },
-                        underline: { fontName: null, fontSize: null },
-                        strong: { fontName: null, fontSize: null }
+                        dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                        italic: { fontName: null, fontSize: null, backgroundColor: null },
+                        underline: { fontName: null, fontSize: null, backgroundColor: null },
+                        strong: { fontName: null, fontSize: null, backgroundColor: null }
                     };
+                }
+                if (!settings.markdownCustom[type]) {
+                    settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
                 }
                 settings.markdownCustom[type].fontName = fontName || null;
             }
@@ -2633,21 +2656,27 @@ function setupEventListeners(template) {
                 if (currentPreset) {
                     if (!currentPreset.markdownCustom) {
                         currentPreset.markdownCustom = {
-                            dialogue: { fontName: null, fontSize: null },
-                            italic: { fontName: null, fontSize: null },
-                            underline: { fontName: null, fontSize: null },
-                            strong: { fontName: null, fontSize: null }
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null }
                         };
+                    }
+                    if (!currentPreset.markdownCustom[type]) {
+                        currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
                     }
                     currentPreset.markdownCustom[type].fontSize = fontSize;
                 } else {
                     if (!settings.markdownCustom) {
                         settings.markdownCustom = {
-                            dialogue: { fontName: null, fontSize: null },
-                            italic: { fontName: null, fontSize: null },
-                            underline: { fontName: null, fontSize: null },
-                            strong: { fontName: null, fontSize: null }
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null }
                         };
+                    }
+                    if (!settings.markdownCustom[type]) {
+                        settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
                     }
                     settings.markdownCustom[type].fontSize = fontSize;
                 }
@@ -2666,6 +2695,46 @@ function setupEventListeners(template) {
                     $(this).val('');
                 }
             }
+        });
+        
+        // 배경색 입력 이벤트
+        template.find(`#markdown-${type}-bg-color-input`).off('change input').on('change input', function() {
+            const bgColor = $(this).val();
+            
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            
+            if (currentPreset) {
+                if (!currentPreset.markdownCustom) {
+                    currentPreset.markdownCustom = {
+                        dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                        italic: { fontName: null, fontSize: null, backgroundColor: null },
+                        underline: { fontName: null, fontSize: null, backgroundColor: null },
+                        strong: { fontName: null, fontSize: null, backgroundColor: null }
+                    };
+                }
+                if (!currentPreset.markdownCustom[type]) {
+                    currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
+                }
+                currentPreset.markdownCustom[type].backgroundColor = bgColor;
+            } else {
+                if (!settings.markdownCustom) {
+                    settings.markdownCustom = {
+                        dialogue: { fontName: null, fontSize: null, backgroundColor: null },
+                        italic: { fontName: null, fontSize: null, backgroundColor: null },
+                        underline: { fontName: null, fontSize: null, backgroundColor: null },
+                        strong: { fontName: null, fontSize: null, backgroundColor: null }
+                    };
+                }
+                if (!settings.markdownCustom[type]) {
+                    settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null };
+                }
+                settings.markdownCustom[type].backgroundColor = bgColor;
+            }
+            
+            saveSettings();
+            applyMarkdownCustomFonts();
         });
     });
     
