@@ -1520,7 +1520,7 @@ function renderFontAddArea(template) {
             <div class="font-guide-info">
                 <p><strong>📝 폰트를 추가하는 세 가지 방법:</strong></p>
                 <p><strong>1. 외부 URL로 가져오기</strong> - CDN이나 외부 서버의 폰트를 CSS 규칙으로 등록 (⭐권장)</p>
-                <p><strong>2. 로컬 폰트 등록하기</strong> - <code>/public/webfonts</code> 폴더에 직접 woff2 형식 폰트 파일 넣어서 등록 (⭐권장)</p>
+                <p><strong>2. 로컬 폰트 등록하기</strong> - <code>/public/webfonts</code> 경로에 직접 woff2 형식 폰트 파일을 넣은 뒤 이 창에서 해당 파일명 등록 (⭐권장)</p>
                 <p><strong>3. 폰트 파일 업로드하기</strong> - 현재 창에서 폰트 파일을 직접 업로드하여 등록</p>
                 <p style="margin-top: 12px;"><strong>⭐ 권장:</strong> <strong>외부 URL</strong> 또는 <strong>로컬 폰트 등록</strong> 방식을 권장합니다.</p>
                 <p style="margin-top: 8px;"><strong>⚠️ 파일 업로드 방식 주의사항:</strong> Base64로 변환된 파일이 브라우저의 localStorage 용량을 차지하며 폰트 선택시 버벅임이 발생할 수 있습니다.</p>
