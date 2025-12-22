@@ -561,58 +561,59 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: sourceText 기반 처리
-            // display_text가 있으면 사용 (이미 마크다운 변환됨)
-            // 없으면 DOM에서 현재 HTML을 읽어 사용 (마크다운이 변환된 상태)
-            let sourceText;
-            if (hasDisplayText) {
-                sourceText = message.extra.display_text; // 이미 마크다운 변환됨
-            } else {
-                // DOM에서 현재 내용을 읽어 마크다운이 변환된 상태를 사용
-                sourceText = messageContent.innerHTML;
-            }
-            
-            let processedContent = sourceText;
+            // 일반 모드 또는 사용 안 함: DOM 기반 처리
+            // 커스텀 태그 요소만 찾아서 span으로 감싸기 (나머지 마크다운은 그대로 유지)
             let hasChanges = false;
             
-            // 모든 태그에 대해 한 번에 처리
+            // jQuery를 사용하여 DOM에서 커스텀 태그 요소 찾기
+            const $messageContent = $(messageContent);
+            
             tagConfigs.forEach(tagConfig => {
-                processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
-                    hasChanges = true;
-                    // 태그 내용 처리
-                    let processedTagContent = content.trim();
-                    
-                    // HTML 태그가 없는 경우에만 줄바꿈을 처리
-                    if (!/<[^>]+>/.test(processedTagContent)) {
-                        // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
-                        processedTagContent = processedTagContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
-                        // 남은 단일 줄바꿈을 <br>로 변환
-                        processedTagContent = processedTagContent.replace(/\n/g, '<br>');
-                        // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
-                        const paragraphs = processedTagContent.split('|||PARAGRAPH|||').filter(p => p.trim());
-                        if (paragraphs.length > 1) {
-                            processedTagContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
-                            // 빈 p 태그 제거
-                            processedTagContent = processedTagContent.replace(/<p>\s*<\/p>/g, '');
+                const tagSelector = tagConfig.tagName.toLowerCase();
+                const $tagElements = $messageContent.find(tagSelector);
+                
+                if ($tagElements.length > 0) {
+                    $tagElements.each(function() {
+                        // 이미 처리된 경우 건너뛰기
+                        if ($(this).find('[data-custom-tag-font]').length > 0) {
+                            return;
                         }
-                    }
-                    
-                    // 태그 내용을 span으로 감싸서 폰트 적용
-                    const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
-                    const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${processedTagContent}</span>`;
-                });
+                        
+                        hasChanges = true;
+                        
+                        // 태그 내용 가져오기
+                        let content = $(this).html();
+                        
+                        // 태그 내용 처리
+                        let processedTagContent = content.trim();
+                        
+                        // HTML 태그가 없는 경우에만 줄바꿈을 처리
+                        if (!/<[^>]+>/.test(processedTagContent)) {
+                            // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
+                            processedTagContent = processedTagContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
+                            // 남은 단일 줄바꿈을 <br>로 변환
+                            processedTagContent = processedTagContent.replace(/\n/g, '<br>');
+                            // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
+                            const paragraphs = processedTagContent.split('|||PARAGRAPH|||').filter(p => p.trim());
+                            if (paragraphs.length > 1) {
+                                processedTagContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
+                                // 빈 p 태그 제거
+                                processedTagContent = processedTagContent.replace(/<p>\s*<\/p>/g, '');
+                            }
+                        }
+                        
+                        // 태그 내용을 span으로 감싸서 폰트 적용
+                        const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
+                        const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                        const newHTML = `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${processedTagContent}</span>`;
+                        
+                        // 커스텀 태그 요소를 span으로 교체
+                        $(this).replaceWith(newHTML);
+                    });
+                }
             });
             
-            // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
-                // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
-                const currentHTML = messageContent.innerHTML.trim();
-                const newHTML = processedContent.trim();
-                
-                if (currentHTML !== newHTML) {
-                    messageContent.innerHTML = processedContent;
-                }
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
             } else {
