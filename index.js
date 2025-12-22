@@ -490,9 +490,18 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const matches = sourceText.matchAll(tagConfig.regex);
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
-                        // 모든 공백/줄바꿈 제거하여 정확한 비교
-                        const tagContentNormalized = tagContent.replace(/\s+/g, '').replace(/\n/g, '').trim();
-                        const spanTextNormalized = spanText.replace(/\s+/g, '').trim();
+                        
+                        // 정규화 함수: 공백/줄바꿈 제거 + 리스트 마커(-, *) 제거
+                        const normalizeText = (text) => {
+                            return (text || '')
+                                .replace(/\n/g, ' ')           // 줄바꿈을 공백으로
+                                .replace(/^\s*[-*]\s+/gm, '')  // 줄 시작의 리스트 마커 제거
+                                .replace(/\s+/g, '')           // 모든 공백 제거
+                                .trim();
+                        };
+                        
+                        const tagContentNormalized = normalizeText(tagContent);
+                        const spanTextNormalized = normalizeText(spanText);
                         
                         // 1순위: 정확히 일치
                         if (tagContentNormalized === spanTextNormalized) {
@@ -503,9 +512,19 @@ function applyCustomTagFonts(forceRefresh = false) {
                         }
                         
                         // 2순위: 태그 내용이 DOM 텍스트를 포함하는 경우만 허용 (더 긴 매칭 우선)
-                        // 반대의 경우 (DOM 텍스트가 태그를 포함)는 허용하지 않음
-                        if (tagContentNormalized.includes(spanTextNormalized)) {
+                        if (tagContentNormalized.includes(spanTextNormalized) && spanTextNormalized.length >= 10) {
                             const matchLength = spanTextNormalized.length;
+                            if (matchLength > bestMatchLength) {
+                                matchedFontFamily = tagConfig.fontFamily;
+                                matchedFontSize = tagConfig.fontSize;
+                                matchedTag = tagConfig;
+                                bestMatchLength = matchLength;
+                            }
+                        }
+                        
+                        // 3순위: DOM 텍스트가 태그 내용을 포함하는 경우 (리스트 마커가 제거되었을 때)
+                        if (!matchedFontFamily && spanTextNormalized.includes(tagContentNormalized) && tagContentNormalized.length >= 10) {
+                            const matchLength = tagContentNormalized.length;
                             if (matchLength > bestMatchLength) {
                                 matchedFontFamily = tagConfig.fontFamily;
                                 matchedFontSize = tagConfig.fontSize;
@@ -524,10 +543,30 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const matchedPadding = matchedTag?.backgroundPadding || 2;
                     const bgColorStyle = matchedBgColor ? ` background-color: ${matchedBgColor} !important; padding: ${matchedPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
                     
+                    // 과한 개행 정리 함수
+                    const cleanupContent = (html) => {
+                        let cleaned = html.trim();
+                        // 줄바꿈을 <br>로 변환
+                        cleaned = cleaned.replace(/\n/g, '<br>');
+                        // 연속된 <br> 정리 (3개 이상 -> 2개)
+                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+                        // 앞뒤 <br> 제거
+                        cleaned = cleaned.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
+                        // <ul>, <ol>, <li> 태그를 간소화 (span 안에서 유효하도록)
+                        cleaned = cleaned.replace(/<\/?ul>/gi, '').replace(/<\/?ol>/gi, '');
+                        cleaned = cleaned.replace(/<li>/gi, '').replace(/<\/li>/gi, '<br>');
+                        // <p> 태그 제거
+                        cleaned = cleaned.replace(/<\/?p>/gi, '<br>');
+                        // 다시 연속 <br> 정리
+                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+                        cleaned = cleaned.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
+                        return cleaned.trim();
+                    };
+                    
                     // original_text에 폰트 적용 (이미 처리된 경우 건너뛰기)
                     if (!span.querySelector('[data-custom-tag-font]')) {
-                        const contentWithBreaks = span.innerHTML.trim().replace(/\n/g, '<br>');
-                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
+                        const contentCleaned = cleanupContent(span.innerHTML);
+                        const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentCleaned}</span>`;
                         
                         // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                         if (span.innerHTML.trim() !== newHTML.trim()) {
@@ -541,8 +580,8 @@ function applyCustomTagFonts(forceRefresh = false) {
                     if (detailsElement) {
                         const translatedTextSpan = detailsElement.querySelector('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
                         if (translatedTextSpan && !translatedTextSpan.querySelector('[data-custom-tag-font]')) {
-                            const translatedContent = translatedTextSpan.innerHTML.trim().replace(/\n/g, '<br>');
-                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${translatedContent}</span>`;
+                            const translatedContentCleaned = cleanupContent(translatedTextSpan.innerHTML);
+                            const newTranslatedHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${translatedContentCleaned}</span>`;
                             
                             // HTML 비교하여 실제로 변경이 필요한 경우에만 적용
                             if (translatedTextSpan.innerHTML.trim() !== newTranslatedHTML.trim()) {
