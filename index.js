@@ -1515,29 +1515,15 @@ function renderThemeRulesList(template) {
 // 폰트 추가 영역 렌더링
 function renderFontAddArea(template) {
     const addAreaHtml = `
-        <div class="font-add-section">
-            <h3>폰트 가져오기</h3>
-            <textarea id="font-source-textarea" class="font-source-textarea" placeholder="⚠️ @font-face 규칙만 등록 가능합니다&#10;&#10;올바른 형태:&#10;@font-face {&#10;  font-family: 'MyCustomFont';&#10;  src: url('https://example.com/font.woff2') format('woff2');&#10;}&#10;&#10;보안상 다른 CSS 규칙은 허용되지 않습니다."></textarea>
-            <div class="font-import-button-container">
-                <button id="import-font-btn" class="import-font-btn">가져오기</button>
-            </div>
-        </div>
         <div class="font-upload-section">
-            <h3>폰트 파일 업로드</h3>
+            <h3>폰트 가져오기</h3>
             <div class="font-upload-info">
-                <p><strong>⚠️ 주의사항:</strong></p>
+                <p><strong>💡 권장 방법:</strong></p>
+                <p>1. SillyTavern 설치 폴더의 <code>/public/webfonts</code> 경로에 woff2 파일을 넣으세요.</p>
+                <p>2. 아래의 <strong>"로컬 폰트 등록"</strong> 버튼을 눌러 등록하세요.</p>
+                <p style="margin-top: 10px;"><strong>⚠️ 파일 업로드 방식 주의사항:</strong></p>
                 <p>• 파일은 Base64로 변환되어 <strong>브라우저 localStorage에 저장</strong>됩니다.</p>
                 <p>• 큰 파일은 <strong>저장소 용량을 많이 차지</strong>하고, 폰트 변경 시 <strong>버벅임이 발생</strong>할 수 있습니다.</p>
-                <p style="margin-top: 10px;"><strong>💡 권장 방법:</strong></p>
-                <p>SillyTavern 설치 폴더의 <code>/public/webfonts</code>에 woff2 파일을 직접 넣고,</p>
-                <p>위의 <strong>"폰트 가져오기"</strong>에서 아래 형식으로 추가하는 것을 권장합니다:</p>
-                <pre style="background-color: var(--black70a); padding: 8px; border-radius: 3px; margin-top: 8px; font-size: 0.85em; overflow-x: auto;">@font-face {
-  font-family: "폰트이름";
-  font-weight: normal;
-  src: url("/webfonts/폰트파일이름.woff2")
-    format("woff2");
-  font-style: normal;
-}</pre>
                 <p style="margin-top: 10px;"><strong>지원 형식:</strong> woff2, woff, ttf, otf (woff2 권장 - 가장 작은 파일 크기)</p>
             </div>
             <div class="font-upload-container">
@@ -1552,11 +1538,24 @@ function renderFontAddArea(template) {
                     <span>업로드</span>
                 </button>
             </div>
+            <div class="font-local-register-container" style="margin-top: 15px;">
+                <button id="register-local-font-btn" class="register-local-font-btn">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span>로컬 폰트 등록</span>
+                </button>
+            </div>
             <div id="upload-progress" class="upload-progress" style="display: none;">
                 <div class="upload-progress-bar">
                     <div id="upload-progress-fill" class="upload-progress-fill"></div>
                 </div>
                 <span id="upload-progress-text" class="upload-progress-text">업로드 중...</span>
+            </div>
+        </div>
+        <div class="font-add-section">
+            <h3>외부 URL로 가져오기</h3>
+            <textarea id="font-source-textarea" class="font-source-textarea" placeholder="⚠️ @font-face 규칙만 등록 가능합니다&#10;&#10;올바른 형태:&#10;@font-face {&#10;  font-family: 'MyCustomFont';&#10;  src: url('https://example.com/font.woff2') format('woff2');&#10;}&#10;&#10;보안상 다른 CSS 규칙은 허용되지 않습니다."></textarea>
+            <div class="font-import-button-container">
+                <button id="import-font-btn" class="import-font-btn">가져오기</button>
             </div>
         </div>
     `;
@@ -2901,6 +2900,126 @@ function setupEventListeners(template) {
         template.find('#select-font-file-btn').prop('disabled', false);
     });
 
+    // 로컬 폰트 등록 버튼
+    template.find('#register-local-font-btn').off('click').on('click', async function() {
+        // 첫 번째 모달: 폰트 파일명 입력
+        let fontFileName = '';
+        let fileNameInputSuccess = false;
+        
+        while (!fileNameInputSuccess) {
+            const fileNameHtml = `
+                <div class="font-name-popup-content">
+                    <p><strong>/public/webfonts</strong> 폴더에 넣은 woff2 파일명을 입력하세요.</p>
+                    <p style="margin-top: 8px; font-size: 0.9em; color: var(--SmartThemeBodyColor);">예: MyFont (확장자 제외)</p>
+                    <input type="text" id="font-file-name-input" class="font-name-input" placeholder="폰트 파일명 (확장자 제외)" maxlength="100">
+                </div>
+            `;
+            
+            const fileNameTemplate = $(fileNameHtml);
+            const fileNamePopup = new Popup(fileNameTemplate, POPUP_TYPE.CONFIRM, '폰트 파일명 입력', { 
+                okButton: '다음', 
+                cancelButton: '취소'
+            });
+            
+            const fileNameResult = await fileNamePopup.show();
+            
+            if (!fileNameResult) {
+                // 취소된 경우
+                return;
+            }
+            
+            fontFileName = fileNameTemplate.find('#font-file-name-input').val().trim();
+            
+            // 파일명 유효성 검사
+            if (!fontFileName) {
+                alert('폰트 파일명을 입력해주세요.');
+                continue;
+            }
+            
+            fileNameInputSuccess = true;
+        }
+        
+        // 두 번째 모달: 폰트 이름 설정
+        let fontName = '';
+        let nameInputSuccess = false;
+        
+        while (!nameInputSuccess) {
+            const fontNameHtml = `
+                <div class="font-name-popup-content">
+                    <p>이 폰트를 어떤 이름으로 등록하시겠습니까?</p>
+                    <p style="margin-top: 8px; font-size: 0.9em; color: var(--SmartThemeBodyColor);">폰트 목록에 표시될 이름입니다.</p>
+                    <input type="text" id="font-name-input" class="font-name-input" placeholder="폰트 이름" maxlength="50" value="${fontFileName}">
+                </div>
+            `;
+            
+            const nameTemplate = $(fontNameHtml);
+            const popup = new Popup(nameTemplate, POPUP_TYPE.CONFIRM, '폰트 이름 설정', { 
+                okButton: '등록', 
+                cancelButton: '취소'
+            });
+            
+            const result = await popup.show();
+            
+            if (!result) {
+                // 취소된 경우
+                return;
+            }
+            
+            fontName = nameTemplate.find('#font-name-input').val().trim();
+            
+            // 폰트 이름 유효성 검사
+            if (!fontName) {
+                alert('폰트 이름을 입력해주세요.');
+                continue;
+            }
+            
+            // 중복 검사
+            const fonts = settings?.fonts || [];
+            const existingFonts = fonts.map(f => f.name);
+            if (existingFonts.includes(fontName)) {
+                alert('이미 존재하는 폰트 이름입니다.\n다른 이름을 사용해주세요.');
+                continue;
+            }
+            
+            nameInputSuccess = true;
+        }
+        
+        // @font-face CSS 생성
+        const fontCss = `@font-face {
+  font-family: "${fontFileName}";
+  font-weight: normal;
+  src: url("/webfonts/${fontFileName}.woff2")
+    format("woff2");
+  font-style: normal;
+}`;
+        
+        // 폰트를 설정에 추가
+        const newFont = {
+            id: generateId(),
+            name: fontName,
+            type: 'source',
+            data: fontCss,
+            fontFamily: fontFileName
+        };
+        
+        settings.fonts.push(newFont);
+        
+        // 폰트 CSS 업데이트
+        updateUIFont();
+        saveSettings();
+        
+        // UI 업데이트
+        renderUIFontSection(template);
+        renderMessageFontSection(template);
+        renderMarkdownCustomSection(template);
+        renderMultiLanguageFontSection(template);
+        renderThemeLinkingSection(template);
+        renderFontList(template);
+        setupEventListeners(template);
+        
+        // 성공 메시지
+        alert(`✅ "${fontName}" 폰트가 등록되었습니다!`);
+    });
     
     // 폰트 삭제 버튼 이벤트
     template.find('.remove-font-btn').off('click').on('click', function() {

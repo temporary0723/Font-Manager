@@ -551,6 +551,35 @@
     background-color: var(--SmartThemeEmColor);
 }
 
+.register-local-font-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--SmartThemeQuoteColor), var(--SmartThemeEmColor));
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.95);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.register-local-font-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.1);
+}
+
+.register-local-font-btn i {
+    font-size: 1.1em;
+}
+
 .selected-file-name {
     color: var(--SmartThemeBodyColor);
     font-size: calc(var(--mainFontSize) * 0.9);
