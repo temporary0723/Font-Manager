@@ -1712,6 +1712,34 @@
     opacity: 0.7;
 }
 
+.markdown-padding-input {
+    width: 55px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    background-color: var(--black50a);
+    color: var(--SmartThemeBodyColor);
+    font-family: inherit;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.markdown-padding-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 0 2px rgba(var(--SmartThemeQuoteColorRGB), 0.3);
+}
+
+.markdown-padding-input:hover {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.markdown-padding-input::placeholder {
+    color: var(--grey30);
+    opacity: 0.7;
+}
+
 /* 색상 선택 래퍼 */
 .markdown-color-picker-wrapper {
     display: flex;
@@ -1757,7 +1785,7 @@
     border: 2px solid var(--SmartThemeBorderColor);
     border-radius: 4px;
     transition: all 0.2s ease;
-    background-color: rgba(20, 20, 30, 0.6);
+    background-color: transparent;
     flex-shrink: 0;
     position: relative;
 }
@@ -1799,7 +1827,8 @@
     }
     
     .markdown-font-dropdown,
-    .markdown-size-input {
+    .markdown-size-input,
+    .markdown-padding-input {
         width: 100%;
     }
     
