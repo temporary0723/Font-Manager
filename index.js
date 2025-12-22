@@ -581,10 +581,17 @@ function applyCustomTagFonts(forceRefresh = false) {
             
             // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
-                // 연속된 줄바꿈(단락 구분)을 먼저 처리 - <br> 하나로 변환
-                processedContent = processedContent.replace(/\n{2,}/g, '<br>');
-                // 나머지 단일 줄바꿈도 <br>로 변환
+                // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
+                processedContent = processedContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
+                // 남은 단일 줄바꿈을 <br>로 변환
                 processedContent = processedContent.replace(/\n/g, '<br>');
+                // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
+                const paragraphs = processedContent.split('|||PARAGRAPH|||').filter(p => p.trim());
+                if (paragraphs.length > 0) {
+                    processedContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
+                }
+                // 빈 p 태그 제거
+                processedContent = processedContent.replace(/<p>\s*<\/p>/g, '');
                 
                 // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
                 // 이미 올바르게 처리된 경우 innerHTML 변경을 피해 커서 초기화 방지
