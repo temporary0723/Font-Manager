@@ -134,15 +134,19 @@
                     <span class="markdown-guide">"따옴표"로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
-                    <select id="markdown-dialogue-font-dropdown" class="markdown-font-dropdown">
-                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
-                    </select>
-                    <input type="number" id="markdown-dialogue-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
-                    <div class="markdown-color-picker-wrapper">
-                        <input type="text" id="markdown-dialogue-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
-                        <div id="markdown-dialogue-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                    <div class="markdown-control-row">
+                        <select id="markdown-dialogue-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-dialogue-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
                     </div>
-                    <input type="number" id="markdown-dialogue-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-dialogue-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-dialogue-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-dialogue-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    </div>
                 </div>
             </div>
             <!-- 이탤릭체 -->
@@ -152,15 +156,19 @@
                     <span class="markdown-guide">*별표 하나*로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
-                    <select id="markdown-italic-font-dropdown" class="markdown-font-dropdown">
-                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
-                    </select>
-                    <input type="number" id="markdown-italic-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
-                    <div class="markdown-color-picker-wrapper">
-                        <input type="text" id="markdown-italic-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
-                        <div id="markdown-italic-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                    <div class="markdown-control-row">
+                        <select id="markdown-italic-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-italic-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
                     </div>
-                    <input type="number" id="markdown-italic-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-italic-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-italic-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-italic-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    </div>
                 </div>
             </div>
             <!-- 밑줄 -->
@@ -170,15 +178,19 @@
                     <span class="markdown-guide">__밑줄__로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
-                    <select id="markdown-underline-font-dropdown" class="markdown-font-dropdown">
-                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
-                    </select>
-                    <input type="number" id="markdown-underline-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
-                    <div class="markdown-color-picker-wrapper">
-                        <input type="text" id="markdown-underline-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
-                        <div id="markdown-underline-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                    <div class="markdown-control-row">
+                        <select id="markdown-underline-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-underline-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
                     </div>
-                    <input type="number" id="markdown-underline-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-underline-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-underline-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-underline-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    </div>
                 </div>
             </div>
             <!-- 강조 -->
@@ -188,15 +200,19 @@
                     <span class="markdown-guide">**별표 둘**로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
-                    <select id="markdown-strong-font-dropdown" class="markdown-font-dropdown">
-                        <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
-                    </select>
-                    <input type="number" id="markdown-strong-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
-                    <div class="markdown-color-picker-wrapper">
-                        <input type="text" id="markdown-strong-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
-                        <div id="markdown-strong-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                    <div class="markdown-control-row">
+                        <select id="markdown-strong-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-strong-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
                     </div>
-                    <input type="number" id="markdown-strong-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-strong-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-strong-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-strong-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    </div>
                 </div>
             </div>
         </div>

@@ -1657,6 +1657,12 @@
 
 .markdown-font-controls {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.markdown-control-row {
+    display: flex;
     align-items: center;
     gap: 10px;
 }
@@ -1821,9 +1827,10 @@
         text-align: left;
     }
     
-    .markdown-font-controls {
+    .markdown-control-row {
         flex-direction: column;
         width: 100%;
+        gap: 8px;
     }
     
     .markdown-font-dropdown,
