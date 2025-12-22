@@ -425,8 +425,8 @@
 }
 
 .import-font-btn {
-    padding: 12px 24px;
-    background-color: var(--SmartThemeBlurTintColor);
+    padding: 10px 20px;
+    background-color: var(--SmartThemeQuoteColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
@@ -442,19 +442,65 @@
 }
 
 .import-font-btn:hover {
-    background-color: var(--SmartThemeQuoteColor);
-    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeEmColor);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* 폰트 파일 업로드 섹션 */
-.font-upload-section {
+.font-guide-section {
     margin-bottom: 20px;
     padding: 15px;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     background-color: var(--black30a);
+}
+
+.font-guide-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.font-guide-info {
+    padding: 10px;
+    background-color: var(--black50a);
+    border-radius: 3px;
+}
+
+.font-guide-info p {
+    margin: 5px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.9);
+    opacity: 0.85;
+}
+
+.font-guide-info code {
+    background-color: var(--black70a);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: calc(var(--mainFontSize) * 0.85);
+    color: var(--SmartThemeQuoteColor);
+}
+
+.font-guide-info strong {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: 600;
+}
+
+.font-local-section {
+    margin-bottom: 20px;
+}
+
+.font-local-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.font-upload-section {
+    margin-bottom: 20px;
 }
 
 .font-upload-section h3 {
@@ -551,33 +597,33 @@
     background-color: var(--SmartThemeEmColor);
 }
 
+.font-local-register-container {
+    display: flex;
+    justify-content: center;
+}
+
 .register-local-font-btn {
     width: 100%;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, var(--SmartThemeQuoteColor), var(--SmartThemeEmColor));
+    padding: 10px 20px;
+    background-color: var(--SmartThemeQuoteColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
     cursor: pointer;
     font-family: inherit;
-    font-size: calc(var(--mainFontSize) * 0.95);
-    font-weight: 600;
-    transition: all 0.3s ease;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    gap: 8px;
 }
 
 .register-local-font-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    filter: brightness(1.1);
-}
-
-.register-local-font-btn i {
-    font-size: 1.1em;
+    background-color: var(--SmartThemeEmColor);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .selected-file-name {
