@@ -551,17 +551,14 @@ function applyCustomTagFonts(forceRefresh = false) {
                         let cleaned = html.trim();
                         // 줄바꿈을 <br>로 변환
                         cleaned = cleaned.replace(/\n/g, '<br>');
-                        // 연속된 <br> 정리 (3개 이상 -> 2개)
-                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
-                        // 앞뒤 <br> 제거
-                        cleaned = cleaned.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
                         // <ul>, <ol>, <li> 태그를 간소화 (span 안에서 유효하도록)
                         cleaned = cleaned.replace(/<\/?ul>/gi, '').replace(/<\/?ol>/gi, '');
                         cleaned = cleaned.replace(/<li>/gi, '').replace(/<\/li>/gi, '<br>');
                         // <p> 태그 제거
                         cleaned = cleaned.replace(/<\/?p>/gi, '<br>');
-                        // 다시 연속 <br> 정리
-                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+                        // 연속된 <br> 정리 (2개 이상 -> 1개)
+                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){2,}/gi, '<br>');
+                        // 앞뒤 <br> 제거
                         cleaned = cleaned.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
                         return cleaned.trim();
                     };
