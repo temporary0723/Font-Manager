@@ -581,7 +581,9 @@ function applyCustomTagFonts(forceRefresh = false) {
             
             // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
-                // 나머지 줄바꿈도 <br>로 변환
+                // 연속된 줄바꿈(단락 구분)을 먼저 처리 - <br> 하나로 변환
+                processedContent = processedContent.replace(/\n{2,}/g, '<br>');
+                // 나머지 단일 줄바꿈도 <br>로 변환
                 processedContent = processedContent.replace(/\n/g, '<br>');
                 
                 // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
