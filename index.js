@@ -1481,26 +1481,24 @@ function renderCustomTagList(template) {
             
             listHtml += `
                 <div class="custom-tag-item">
-                    <div class="custom-tag-info">
+                    <div class="custom-tag-header">
                         <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
-                        <span class="custom-tag-arrow">→</span>
+                        <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="custom-tag-control-row">
                         <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택">
                             ${fontOptions}
                         </select>
+                        <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" placeholder="크기" title="폰트 크기 (px)">
                     </div>
-                    <div class="custom-tag-controls">
-                        <label class="custom-tag-size-label">크기:</label>
-                        <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" title="폰트 크기 (px)">
-                    </div>
-                    <div class="custom-tag-controls">
+                    <div class="custom-tag-control-row">
                         <div class="markdown-color-picker-wrapper">
                             <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)">
                             <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="색상 미리보기"></div>
                         </div>
                         <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
-                        <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
                     </div>
                 </div>
             `;
