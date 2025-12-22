@@ -592,43 +592,120 @@ function applyCustomTagFonts(forceRefresh = false) {
             
             // jQuery로 DOM 파싱
             const $content = $('<div>').html(currentHTML);
+
+            // <br>을 줄바꿈으로 취급해서 텍스트를 추출 (jQuery .text()는 <br>을 무시함)
+            const getTextWithBr = ($el) => {
+                const html = ($el.html() || '').replace(/<br\s*\/?>/gi, '\n');
+                return $('<div>').html(html).text();
+            };
+
+            const normalizeKeepNewlines = (s) => {
+                return (s || '')
+                    .replace(/\r\n/g, '\n')
+                    .replace(/[ \t]+\n/g, '\n')
+                    .replace(/\n[ \t]+/g, '\n')
+                    .replace(/[ \t]+/g, ' ')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim();
+            };
+
+            const normalizeToSingleLine = (s) => {
+                return (s || '')
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            };
+
+            const stripSimpleMarkdown = (s) => {
+                // 매우 단순한 마크다운(강조/취소선/인라인코드)만 제거해서 DOM 텍스트와 매칭을 돕는다
+                return (s || '')
+                    .replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/__(.*?)__/g, '$1')
+                    .replace(/\*(.*?)\*/g, '$1')
+                    .replace(/_(.*?)_/g, '$1')
+                    .replace(/~~(.*?)~~/g, '$1')
+                    .replace(/`([^`]+)`/g, '$1');
+            };
+
+            // 문서 순서대로 탐색하기 위한 요소 목록
+            const orderedElements = $content.find('p, ul, ol').toArray();
+            let searchPos = 0;
             
             // 각 태그 매치에 대해 처리
             tagMatches.forEach(tagMatch => {
-                const tagContentLines = tagMatch.content.split('\n').map(line => line.trim()).filter(line => line);
-                
-                // DOM에서 태그 내용과 일치하는 요소 찾기
-                // 여러 p 태그에 걸쳐 있을 수 있으므로 연속된 요소들을 확인
-                $content.find('p').each(function(index) {
-                    const $p = $(this);
-                    
-                    // 이미 처리된 요소는 건너뛰기
-                    if ($p.find('[data-custom-tag-font]').length > 0 || $p.children('[data-custom-tag-font]').length > 0) {
+                // 태그 내용을 단락 단위로 분해 (빈 줄 2개 이상은 단락 구분)
+                const rawContent = tagMatch.content || '';
+                const paragraphs = rawContent
+                    .split(/\n{2,}/g)
+                    .map(p => p.trim())
+                    .filter(Boolean);
+
+                const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
+                const bgColorStyle = tagMatch.config.backgroundColor
+                    ? ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`
+                    : '';
+
+                const wrapHTML = (innerHTML) =>
+                    `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${innerHTML}</span>`;
+
+                // 각 단락을 문서 순서대로 매칭
+                paragraphs.forEach(paragraph => {
+                    const lines = paragraph.split('\n').map(l => l.trim()).filter(Boolean);
+                    const isList = lines.length > 0 && lines.every(l => /^[-*]\s+/.test(l));
+
+                    if (isList) {
+                        const expectedItems = lines.map(l => l.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
+                        for (let i = searchPos; i < orderedElements.length; i++) {
+                            const el = orderedElements[i];
+                            const tag = (el.tagName || '').toLowerCase();
+                            if (tag !== 'ul' && tag !== 'ol') continue;
+
+                            const $list = $(el);
+                            if ($list.find('[data-custom-tag-font]').length > 0) continue;
+
+                            const $items = $list.find('li');
+                            if ($items.length === 0) continue;
+
+                            const itemTexts = $items.toArray().map(li => normalizeToSingleLine(getTextWithBr($(li))));
+                            const expectedNorm = expectedItems.map(t => normalizeToSingleLine(stripSimpleMarkdown(t)));
+
+                            // 리스트 항목이 순서대로 동일한지 확인 (길이가 다르면 부분 매칭 허용 X)
+                            if (itemTexts.length === expectedNorm.length && itemTexts.every((t, idx) => t === expectedNorm[idx])) {
+                                // li 각각 감싸기
+                                $items.each(function () {
+                                    const $li = $(this);
+                                    if ($li.find('[data-custom-tag-font]').length > 0) return;
+                                    $li.html(wrapHTML($li.html()));
+                                });
+                                hasChanges = true;
+                                searchPos = i + 1;
+                                break;
+                            }
+                        }
                         return;
                     }
-                    
-                    // 요소의 텍스트 내용 (HTML 태그 제거)
-                    const pText = $p.text().trim();
-                    
-                    // 태그 내용의 첫 줄과 일치하는지 확인
-                    if (tagContentLines.length > 0 && pText.includes(tagContentLines[0])) {
-                        // 전체 내용이 일치하는지 확인
-                        let matchesAll = true;
-                        const normalizedPText = pText.replace(/\s+/g, ' ');
-                        const normalizedTagText = tagContentLines.join(' ').replace(/\s+/g, ' ');
-                        
-                        if (normalizedPText === normalizedTagText || pText === tagMatch.content.replace(/\n/g, ' ').trim()) {
-                            // 단일 p 태그에 모든 내용이 있음
+
+                    // 일반 단락(p) 매칭
+                    const expectedKeepNl = normalizeKeepNewlines(stripSimpleMarkdown(paragraph));
+                    const expectedSingle = normalizeToSingleLine(stripSimpleMarkdown(paragraph));
+
+                    for (let i = searchPos; i < orderedElements.length; i++) {
+                        const el = orderedElements[i];
+                        if ((el.tagName || '').toLowerCase() !== 'p') continue;
+                        const $p = $(el);
+
+                        if ($p.find('[data-custom-tag-font]').length > 0 || $p.children('[data-custom-tag-font]').length > 0) {
+                            continue;
+                        }
+
+                        const pTextKeepNl = normalizeKeepNewlines(getTextWithBr($p));
+                        const pTextSingle = normalizeToSingleLine(getTextWithBr($p));
+
+                        if (pTextKeepNl === expectedKeepNl || pTextSingle === expectedSingle) {
+                            $p.html(wrapHTML($p.html()));
                             hasChanges = true;
-                            
-                            const elementHTML = $p.html();
-                            const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
-                            const bgColorStyle = tagMatch.config.backgroundColor ? ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                            
-                            const wrappedHTML = `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${elementHTML}</span>`;
-                            
-                            $p.html(wrappedHTML);
-                            return false; // break
+                            searchPos = i + 1;
+                            break;
                         }
                     }
                 });
