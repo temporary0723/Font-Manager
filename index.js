@@ -562,92 +562,86 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: 원본 텍스트에 messageFormatting 적용 후 태그 처리
+            // 일반 모드 또는 사용 안 함: DOM에서 이미 렌더링된 HTML 기반으로 태그 처리
             const sourceText = message.mes;
-            let hasTagsInSource = false;
             
-            // 원본에 태그가 있는지 확인
+            // 원본 텍스트에서 태그 찾기
+            const tagMatches = [];
             tagConfigs.forEach(tagConfig => {
-                if (tagConfig.regex.test(sourceText)) {
-                    hasTagsInSource = true;
-                }
+                const matches = [...sourceText.matchAll(tagConfig.regex)];
+                matches.forEach(match => {
+                    tagMatches.push({
+                        fullMatch: match[0],
+                        content: match[1].trim(),
+                        config: tagConfig
+                    });
+                });
                 tagConfig.regex.lastIndex = 0; // regex 상태 초기화
             });
             
-            if (!hasTagsInSource) {
+            if (tagMatches.length === 0) {
                 // 태그가 없으면 처리 표시만
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
                 return;
             }
             
-            // 1단계: 전체 텍스트에 messageFormatting 적용 (태그 포함)
-            let formattedHTML = '';
-            try {
-                formattedHTML = messageFormatting(
-                    sourceText,
-                    message.name || '',
-                    message.is_system || false,
-                    message.is_user || false
-                );
-            } catch (error) {
-                console.warn('[Font Manager] messageFormatting failed, using fallback:', error);
-                // 폴백: 기본 처리
-                formattedHTML = sourceText.replace(/\n{2,}/g, '|||PARAGRAPH|||');
-                formattedHTML = formattedHTML.replace(/\n/g, '<br>');
-                const paragraphs = formattedHTML.split('|||PARAGRAPH|||').filter(p => p.trim());
-                if (paragraphs.length > 0) {
-                    formattedHTML = '<p>' + paragraphs.join('</p><p>') + '</p>';
-                }
-            }
-            
-            // 2단계: HTML에서 커스텀 태그 요소 찾아서 span으로 교체
-            let processedHTML = formattedHTML;
+            // DOM에서 현재 HTML 가져오기 (이미 SillyTavern이 마크다운을 변환한 상태)
+            let currentHTML = messageContent.innerHTML;
             let hasChanges = false;
             
-            tagConfigs.forEach(tagConfig => {
-                const tagName = tagConfig.tagName.toLowerCase();
-                // HTML에서 <tagname>content</tagname> 패턴 찾기
-                const htmlTagPattern = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'gis');
+            // jQuery로 DOM 파싱
+            const $content = $('<div>').html(currentHTML);
+            
+            // 각 태그 매치에 대해 처리
+            tagMatches.forEach(tagMatch => {
+                const tagContentLines = tagMatch.content.split('\n').map(line => line.trim()).filter(line => line);
                 
-                if (htmlTagPattern.test(processedHTML)) {
-                    hasChanges = true;
+                // DOM에서 태그 내용과 일치하는 요소 찾기
+                // 여러 p 태그에 걸쳐 있을 수 있으므로 연속된 요소들을 확인
+                $content.find('p').each(function(index) {
+                    const $p = $(this);
                     
-                    // 태그를 span으로 교체
-                    processedHTML = processedHTML.replace(htmlTagPattern, (match, content) => {
-                        // 태그 내용에도 마크다운이 적용되도록 messageFormatting 호출
-                        let formattedContent = content;
-                        try {
-                            formattedContent = messageFormatting(
-                                content,
-                                message.name || '',
-                                message.is_system || false,
-                                message.is_user || false
-                            );
-                            // messageFormatting이 <p> 태그로 감쌀 수 있으므로 제거
-                            formattedContent = formattedContent.replace(/^<p>|<\/p>$/g, '').trim();
-                        } catch (error) {
-                            // 폴백: 줄바꿈만 처리
-                            formattedContent = content.replace(/\n/g, '<br>');
+                    // 이미 처리된 요소는 건너뛰기
+                    if ($p.find('[data-custom-tag-font]').length > 0 || $p.children('[data-custom-tag-font]').length > 0) {
+                        return;
+                    }
+                    
+                    // 요소의 텍스트 내용 (HTML 태그 제거)
+                    const pText = $p.text().trim();
+                    
+                    // 태그 내용의 첫 줄과 일치하는지 확인
+                    if (tagContentLines.length > 0 && pText.includes(tagContentLines[0])) {
+                        // 전체 내용이 일치하는지 확인
+                        let matchesAll = true;
+                        const normalizedPText = pText.replace(/\s+/g, ' ');
+                        const normalizedTagText = tagContentLines.join(' ').replace(/\s+/g, ' ');
+                        
+                        if (normalizedPText === normalizedTagText || pText === tagMatch.content.replace(/\n/g, ' ').trim()) {
+                            // 단일 p 태그에 모든 내용이 있음
+                            hasChanges = true;
+                            
+                            const elementHTML = $p.html();
+                            const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
+                            const bgColorStyle = tagMatch.config.backgroundColor ? ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                            
+                            const wrappedHTML = `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${elementHTML}</span>`;
+                            
+                            $p.html(wrappedHTML);
+                            return false; // break
                         }
-                        
-                        const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
-                        const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                        
-                        return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${formattedContent}</span>`;
-                    });
-                }
-                
-                htmlTagPattern.lastIndex = 0; // regex 상태 초기화
+                    }
+                });
             });
             
-            // 3단계: DOM에 적용
+            // 처리된 HTML을 DOM에 적용
             if (hasChanges) {
-                const currentHTML = messageContent.innerHTML.trim();
-                const newHTML = processedHTML.trim();
+                const newHTML = $content.html();
+                const currentHTMLTrimmed = messageContent.innerHTML.trim();
+                const newHTMLTrimmed = newHTML.trim();
                 
-                if (currentHTML !== newHTML) {
-                    messageContent.innerHTML = processedHTML;
+                if (currentHTMLTrimmed !== newHTMLTrimmed) {
+                    messageContent.innerHTML = newHTML;
                 }
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
