@@ -561,59 +561,46 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            // 일반 모드 또는 사용 안 함: DOM 기반 처리
-            // 커스텀 태그 요소만 찾아서 span으로 감싸기 (나머지 마크다운은 그대로 유지)
+            // 일반 모드 또는 사용 안 함: sourceText 기반 처리
+            let sourceText = hasDisplayText ? message.extra.display_text : message.mes;
+            let processedContent = sourceText;
             let hasChanges = false;
             
-            // jQuery를 사용하여 DOM에서 커스텀 태그 요소 찾기
-            const $messageContent = $(messageContent);
-            
+            // 모든 태그에 대해 한 번에 처리
             tagConfigs.forEach(tagConfig => {
-                const tagSelector = tagConfig.tagName.toLowerCase();
-                const $tagElements = $messageContent.find(tagSelector);
-                
-                if ($tagElements.length > 0) {
-                    $tagElements.each(function() {
-                        // 이미 처리된 경우 건너뛰기
-                        if ($(this).find('[data-custom-tag-font]').length > 0) {
-                            return;
-                        }
-                        
-                        hasChanges = true;
-                        
-                        // 태그 내용 가져오기
-                        let content = $(this).html();
-                        
-                        // 태그 내용 처리
-                        let processedTagContent = content.trim();
-                        
-                        // HTML 태그가 없는 경우에만 줄바꿈을 처리
-                        if (!/<[^>]+>/.test(processedTagContent)) {
-                            // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
-                            processedTagContent = processedTagContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
-                            // 남은 단일 줄바꿈을 <br>로 변환
-                            processedTagContent = processedTagContent.replace(/\n/g, '<br>');
-                            // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
-                            const paragraphs = processedTagContent.split('|||PARAGRAPH|||').filter(p => p.trim());
-                            if (paragraphs.length > 1) {
-                                processedTagContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
-                                // 빈 p 태그 제거
-                                processedTagContent = processedTagContent.replace(/<p>\s*<\/p>/g, '');
-                            }
-                        }
-                        
-                        // 태그 내용을 span으로 감싸서 폰트 적용
-                        const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
-                        const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
-                        const newHTML = `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${processedTagContent}</span>`;
-                        
-                        // 커스텀 태그 요소를 span으로 교체
-                        $(this).replaceWith(newHTML);
-                    });
-                }
+                processedContent = processedContent.replace(tagConfig.regex, (match, content) => {
+                    hasChanges = true;
+                    // 앞뒤 공백 제거 후 줄바꿈을 <br>로 변환하여 유지
+                    const contentWithBreaks = content.trim().replace(/\n/g, '<br>');
+                    // 태그 내용을 span으로 감싸서 폰트 적용
+                    const fontSizeStyle = tagConfig.fontSize ? ` font-size: ${tagConfig.fontSize}px !important;` : '';
+                    const bgColorStyle = tagConfig.backgroundColor ? ` background-color: ${tagConfig.backgroundColor} !important; padding: ${tagConfig.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` : '';
+                    return `<span data-custom-tag-font="${tagConfig.fontFamily}" style="font-family: '${tagConfig.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${contentWithBreaks}</span>`;
+                });
             });
             
+            // 처리된 내용을 DOM에 적용 (메시지 내부 데이터는 수정하지 않음)
             if (hasChanges) {
+                // 단락 구분을 위한 특수 마커로 변환 (연속된 줄바꿈 2개 이상)
+                processedContent = processedContent.replace(/\n{2,}/g, '|||PARAGRAPH|||');
+                // 남은 단일 줄바꿈을 <br>로 변환
+                processedContent = processedContent.replace(/\n/g, '<br>');
+                // 단락 구분 마커를 기준으로 <p> 태그로 감싸기
+                const paragraphs = processedContent.split('|||PARAGRAPH|||').filter(p => p.trim());
+                if (paragraphs.length > 0) {
+                    processedContent = '<p>' + paragraphs.join('</p><p>') + '</p>';
+                }
+                // 빈 p 태그 제거
+                processedContent = processedContent.replace(/<p>\s*<\/p>/g, '');
+                
+                // 현재 내용과 비교하여 실제로 변경이 필요한 경우에만 적용
+                // 이미 올바르게 처리된 경우 innerHTML 변경을 피해 커서 초기화 방지
+                const currentHTML = messageContent.innerHTML.trim();
+                const newHTML = processedContent.trim();
+                
+                if (currentHTML !== newHTML) {
+                    messageContent.innerHTML = processedContent;
+                }
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
             } else {
