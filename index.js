@@ -642,11 +642,27 @@ function applyCustomTagFonts(forceRefresh = false) {
                         message.is_system || false,
                         message.is_user || false
                     );
-                    // 바깥 p 태그 제거 (단일 p로 감싸진 경우)
-                    formattedContent = formattedContent.replace(/^<p>([\s\S]*)<\/p>$/i, '$1').trim();
+                    
+                    // span 안에 block 요소가 들어가면 안 되므로 변환
+                    // </p><p> -> <br><br> (단락 구분)
+                    formattedContent = formattedContent.replace(/<\/p>\s*<p>/gi, '<br><br>');
+                    // 첫 번째 <p>와 마지막 </p> 제거
+                    formattedContent = formattedContent.replace(/^<p>/i, '').replace(/<\/p>$/i, '');
+                    // 남은 <p>, </p> 제거
+                    formattedContent = formattedContent.replace(/<\/?p>/gi, '<br>');
+                    // <ul>, <ol> -> 줄바꿈
+                    formattedContent = formattedContent.replace(/<ul>/gi, '').replace(/<\/ul>/gi, '');
+                    formattedContent = formattedContent.replace(/<ol>/gi, '').replace(/<\/ol>/gi, '');
+                    // <li> -> 줄바꿈 + 내용
+                    formattedContent = formattedContent.replace(/<li>/gi, '').replace(/<\/li>/gi, '<br>');
+                    // 연속 <br> 정리 (3개 이상 -> 2개)
+                    formattedContent = formattedContent.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+                    // 앞뒤 <br> 제거
+                    formattedContent = formattedContent.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
+                    formattedContent = formattedContent.trim();
                 } catch (error) {
                     // 폴백: 줄바꿈만 처리
-                    formattedContent = tag.content.replace(/\n/g, '<br>');
+                    formattedContent = tag.content.trim().replace(/\n/g, '<br>');
                 }
                 
                 const fontSizeStyle = tag.config.fontSize ? ` font-size: ${tag.config.fontSize}px !important;` : '';
@@ -654,12 +670,16 @@ function applyCustomTagFonts(forceRefresh = false) {
                     ? ` background-color: ${tag.config.backgroundColor} !important; padding: ${tag.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` 
                     : '';
                 
-                const wrappedContent = `<span data-custom-tag-font="${tag.config.fontFamily}" style="font-family: '${tag.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${formattedContent}</span>`;
+                // span으로 감싸고 앞뒤에 줄바꿈 추가 (문단 분리)
+                const wrappedContent = `</p><p><span data-custom-tag-font="${tag.config.fontFamily}" style="font-family: '${tag.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${formattedContent}</span></p><p>`;
                 
                 // 마커가 <p> 태그로 감싸졌을 수 있으므로 패턴으로 교체
                 const markerPattern = new RegExp(`(<p>)?${marker.replace(/\|/g, '\\|')}(<\\/p>)?`, 'g');
                 formattedHTML = formattedHTML.replace(markerPattern, wrappedContent);
             });
+            
+            // 빈 <p></p> 태그 정리
+            formattedHTML = formattedHTML.replace(/<p>\s*<\/p>/g, '');
             
             // DOM에 적용
             if (hasChanges) {
