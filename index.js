@@ -364,6 +364,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                 tagName: tag.tagName,
                 fontFamily: actualFontFamily,
                 fontSize: fontSize,
+                textColor: tag.textColor || null,
                 backgroundColor: tag.backgroundColor || null,
                 backgroundPadding: tag.backgroundPadding || 2,
                 regex: tagRegex
@@ -705,12 +706,13 @@ function applyCustomTagFonts(forceRefresh = false) {
                 }
                 
                 const fontSizeStyle = tag.config.fontSize ? ` font-size: ${tag.config.fontSize}px !important;` : '';
+                const textColorStyle = tag.config.textColor ? ` color: ${tag.config.textColor} !important;` : '';
                 const bgColorStyle = tag.config.backgroundColor 
                     ? ` background-color: ${tag.config.backgroundColor} !important; padding: ${tag.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;` 
                     : '';
                 
                 // span으로 감싸고 앞뒤에 줄바꿈 추가 (문단 분리)
-                const wrappedContent = `</p><p><span data-custom-tag-font="${tag.config.fontFamily}" style="font-family: '${tag.config.fontFamily}', sans-serif !important;${fontSizeStyle}${bgColorStyle}">${formattedContent}</span></p><p>`;
+                const wrappedContent = `</p><p><span data-custom-tag-font="${tag.config.fontFamily}" style="font-family: '${tag.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${formattedContent}</span></p><p>`;
                 
                 // 마커가 <p> 태그로 감싸졌을 수 있으므로 패턴으로 교체
                 const markerPattern = new RegExp(`(<p>)?${marker.replace(/\|/g, '\\|')}(<\\/p>)?`, 'g');
@@ -1601,8 +1603,10 @@ function renderCustomTagList(template) {
                 fontOptions += `<option value="${font.name}" ${selected}>${font.name}</option>`;
             });
             
+            const textColor = tag.textColor || '';
             const bgColor = tag.backgroundColor || '';
             const padding = tag.backgroundPadding || '';
+            const textColorStyle = textColor ? `background-color: ${textColor};` : 'background-color: transparent;';
             const bgColorStyle = bgColor ? `background-color: ${bgColor};` : 'background-color: transparent;';
             
             listHtml += `
@@ -1617,14 +1621,26 @@ function renderCustomTagList(template) {
                         <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택">
                             ${fontOptions}
                         </select>
-                        <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" placeholder="크기" title="폰트 크기 (px)">
                     </div>
-                    <div class="custom-tag-control-row">
-                        <div class="markdown-color-picker-wrapper">
-                            <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)">
-                            <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="색상 미리보기"></div>
+                    <div class="custom-tag-color-section">
+                        <span class="custom-tag-color-label">텍스트 색상</span>
+                        <div class="custom-tag-control-row">
+                            <div class="markdown-color-picker-wrapper">
+                                <input type="text" class="markdown-bg-color-text custom-tag-text-color-input" data-id="${tag.id}" value="${textColor}" placeholder="#121212">
+                                <div class="markdown-bg-color-preview custom-tag-text-color-preview" style="${textColorStyle}" title="텍스트 색상 미리보기"></div>
+                            </div>
+                            <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" placeholder="크기" title="폰트 크기 (px)">
                         </div>
-                        <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                    </div>
+                    <div class="custom-tag-color-section">
+                        <span class="custom-tag-color-label">배경 색상</span>
+                        <div class="custom-tag-control-row">
+                            <div class="markdown-color-picker-wrapper">
+                                <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)">
+                                <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="배경 색상 미리보기"></div>
+                            </div>
+                            <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                        </div>
                     </div>
                 </div>
             `;
@@ -3708,6 +3724,52 @@ function setupCustomTagEventListeners(template) {
         }
     });
     
+    // 텍스트 색상 입력 필드 이벤트
+    let textColorTimeout = {};
+    template.find('.custom-tag-text-color-input').off('input blur').on('input', function() {
+        const tagId = $(this).data('id');
+        const inputValue = $(this).val().trim();
+        const preview = $(this).siblings('.custom-tag-text-color-preview');
+        
+        clearTimeout(textColorTimeout[tagId]);
+        textColorTimeout[tagId] = setTimeout(() => {
+            if (!inputValue || /^(none|transparent)$/i.test(inputValue) || isValidColor(inputValue)) {
+                if (!inputValue || /^(none|transparent)$/i.test(inputValue)) {
+                    preview.css('background-color', 'transparent');
+                } else {
+                    preview.css('background-color', inputValue);
+                }
+                updateCustomTagTextColor(template, tagId, inputValue);
+            }
+        }, 500);
+    }).on('blur', function() {
+        const tagId = $(this).data('id');
+        const inputValue = $(this).val().trim();
+        const preview = $(this).siblings('.custom-tag-text-color-preview');
+        
+        if (!inputValue || /^(none|transparent)$/i.test(inputValue) || isValidColor(inputValue)) {
+            if (!inputValue || /^(none|transparent)$/i.test(inputValue)) {
+                preview.css('background-color', 'transparent');
+            } else {
+                preview.css('background-color', inputValue);
+            }
+            clearTimeout(textColorTimeout[tagId]);
+            updateCustomTagTextColor(template, tagId, inputValue);
+        } else {
+            const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+            const presets = settings?.presets || [];
+            const currentPreset = presets.find(p => p.id === currentPresetId);
+            const tag = currentPreset?.customTags?.find(t => t.id === tagId);
+            const savedColor = tag?.textColor || '';
+            $(this).val(savedColor);
+            if (!savedColor) {
+                preview.css('background-color', 'transparent');
+            } else {
+                preview.css('background-color', savedColor);
+            }
+        }
+    });
+    
     // 여백 입력 필드 이벤트
     template.find('.custom-tag-padding-input').off('change').on('change', function() {
         const tagId = $(this).data('id');
@@ -3804,6 +3866,25 @@ function updateCustomTagFont(template, tagId, fontName) {
 }
 
 // 태그 커스텀 배경색 업데이트
+// 태그 커스텀 텍스트 색상 업데이트
+function updateCustomTagTextColor(template, tagId, textColor) {
+    const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+    const presets = settings?.presets || [];
+    const currentPreset = presets.find(p => p.id === currentPresetId);
+    
+    if (!currentPreset || !currentPreset.customTags) return;
+    
+    const tag = currentPreset.customTags.find(t => t.id === tagId);
+    
+    if (tag) {
+        tag.textColor = (!textColor || /^(none|transparent)$/i.test(textColor)) ? null : textColor;
+        saveSettings();
+        
+        // 메시지에 즉시 적용 (강제 새로고침)
+        applyCustomTagFonts(true);
+    }
+}
+
 function updateCustomTagBackgroundColor(template, tagId, backgroundColor) {
     const currentPresetId = selectedPresetId ?? settings?.currentPreset;
     const presets = settings?.presets || [];
