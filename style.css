@@ -426,7 +426,7 @@
 
 .import-font-btn {
     padding: 10px 20px;
-    background-color: var(--SmartThemeQuoteColor);
+    background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
@@ -442,7 +442,7 @@
 }
 
 .import-font-btn:hover {
-    background-color: var(--SmartThemeEmColor);
+    background-color: var(--SmartThemeQuoteColor);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -590,11 +590,11 @@
 }
 
 .upload-font-btn {
-    background-color: var(--SmartThemeQuoteColor);
+    background-color: var(--SmartThemeBlurTintColor);
 }
 
 .upload-font-btn:hover:not(:disabled) {
-    background-color: var(--SmartThemeEmColor);
+    background-color: var(--SmartThemeQuoteColor);
 }
 
 .font-local-register-container {
@@ -605,7 +605,7 @@
 .register-local-font-btn {
     width: 100%;
     padding: 10px 20px;
-    background-color: var(--SmartThemeQuoteColor);
+    background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
@@ -621,7 +621,7 @@
 }
 
 .register-local-font-btn:hover {
-    background-color: var(--SmartThemeEmColor);
+    background-color: var(--SmartThemeQuoteColor);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
