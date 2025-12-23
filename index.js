@@ -500,11 +500,13 @@ function applyCustomTagFonts(forceRefresh = false) {
                         const normalizeText = (text) => {
                             return (text || '')
                                 .replace(/^\s*[-*]\s+/gm, '')   // 1. 리스트 마커 제거 (줄바꿈 있는 상태에서)
-                                .replace(/\n/g, '')             // 2. 줄바꿈 제거
+                                .replace(/[\r\n]+/g, '')        // 2. 모든 줄바꿈 제거 (Windows \r\n 포함)
                                 .replace(/\*\*|__/g, '')        // 3. 볼드 마크다운 기호 제거
                                 .replace(/\*|_/g, '')           // 4. 이탤릭 마크다운 기호 제거
                                 .replace(/~~/g, '')             // 5. 취소선 마크다운 기호 제거
-                                .replace(/\s+/g, '')            // 6. 모든 공백 제거
+                                .replace(/<[^>]*>/g, '')        // 6. HTML 태그 제거 (잔여 태그 정리)
+                                .replace(/&[a-zA-Z0-9#]+;/g, '') // 7. HTML 엔티티 제거
+                                .replace(/\s+/g, '')            // 8. 모든 공백 제거
                                 .trim();
                         };
                         
