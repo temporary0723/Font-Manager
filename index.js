@@ -496,12 +496,15 @@ function applyCustomTagFonts(forceRefresh = false) {
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
                         
-                        // 정규화 함수: 모든 공백/줄바꿈/특수문자 제거
+                        // 정규화 함수: 모든 공백/줄바꿈/마크다운 기호 제거
                         const normalizeText = (text) => {
                             return (text || '')
                                 .replace(/^\s*[-*]\s+/gm, '')   // 1. 리스트 마커 제거 (줄바꿈 있는 상태에서)
                                 .replace(/\n/g, '')             // 2. 줄바꿈 제거
-                                .replace(/\s+/g, '')            // 3. 모든 공백 제거
+                                .replace(/\*\*|__/g, '')        // 3. 볼드 마크다운 기호 제거
+                                .replace(/\*|_/g, '')           // 4. 이탤릭 마크다운 기호 제거
+                                .replace(/~~/g, '')             // 5. 취소선 마크다운 기호 제거
+                                .replace(/\s+/g, '')            // 6. 모든 공백 제거
                                 .trim();
                         };
                         
