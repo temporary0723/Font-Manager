@@ -2597,13 +2597,14 @@ ${fontSizeStyle}${backgroundColorStyle}}
     
     // 태그 커스텀 내부 요소는 마크다운 커스텀을 무시하도록 오버라이드 규칙 추가
     // 태그 내부의 마크다운 요소들은 부모(태그 커스텀 span)의 스타일을 상속받음
+    // html body .mes_text 접두사로 specificity를 높여 마크다운 커스텀보다 우선 적용
     markdownCss.push(`
 /* 태그 커스텀 내부 마크다운 요소 - 마크다운 커스텀 무시 */
-[data-custom-tag-font] q,
-[data-custom-tag-font] blockquote,
-[data-custom-tag-font] em,
-[data-custom-tag-font] u,
-[data-custom-tag-font] strong {
+html body .mes_text [data-custom-tag-font] q,
+html body .mes_text [data-custom-tag-font] blockquote,
+html body .mes_text [data-custom-tag-font] em,
+html body .mes_text [data-custom-tag-font] u,
+html body .mes_text [data-custom-tag-font] strong {
   font-family: inherit !important;
   font-size: inherit !important;
   background: none !important;
