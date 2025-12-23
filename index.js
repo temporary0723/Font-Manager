@@ -2595,6 +2595,23 @@ ${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
+    // 태그 커스텀 내부 요소는 마크다운 커스텀을 무시하도록 오버라이드 규칙 추가
+    // 태그 내부의 마크다운 요소들은 부모(태그 커스텀 span)의 스타일을 상속받음
+    markdownCss.push(`
+/* 태그 커스텀 내부 마크다운 요소 - 마크다운 커스텀 무시 */
+[data-custom-tag-font] q,
+[data-custom-tag-font] blockquote,
+[data-custom-tag-font] em,
+[data-custom-tag-font] u,
+[data-custom-tag-font] strong {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  background: none !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+    `);
+    
     // 스타일 적용
     if (markdownCss.length > 0) {
         markdownStyle.innerHTML = markdownCss.join('\n');
