@@ -636,6 +636,7 @@ function applyCustomTagFonts(forceRefresh = false) {
             // 일반 모드: display_text 유무에 따라 처리 방식 분기
             const sourceText = message.mes;
             const hasDisplayText = message.extra?.display_text;
+            const displayText = hasDisplayText ? message.extra.display_text : null;
             
             // 원본에 태그가 있는지 확인
             let hasTagsInSource = false;
@@ -649,14 +650,35 @@ function applyCustomTagFonts(forceRefresh = false) {
                             fullMatch: match[0],
                             content: match[1],
                             index: match.index,
-                            config: tagConfig
+                            config: tagConfig,
+                            isFromSource: true // 원본에서 찾은 태그
                         });
                     });
                 }
                 tagConfig.regex.lastIndex = 0;
             });
             
-            if (!hasTagsInSource) {
+            // display_text(번역문)에서도 태그 찾기 (번역문 DOM 매칭용)
+            const tagMatchesInDisplay = [];
+            if (displayText) {
+                tagConfigs.forEach(tagConfig => {
+                    const matches = [...displayText.matchAll(tagConfig.regex)];
+                    if (matches.length > 0) {
+                        matches.forEach(match => {
+                            tagMatchesInDisplay.push({
+                                fullMatch: match[0],
+                                content: match[1],
+                                index: match.index,
+                                config: tagConfig,
+                                isFromDisplay: true // 번역문에서 찾은 태그
+                            });
+                        });
+                    }
+                    tagConfig.regex.lastIndex = 0;
+                });
+            }
+            
+            if (!hasTagsInSource && tagMatchesInDisplay.length === 0) {
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
                 return;
@@ -786,12 +808,21 @@ function applyCustomTagFonts(forceRefresh = false) {
             if (hasDisplayText) {
                 let hasChanges = false;
                 
-                // 각 태그 매칭에 대해 DOM에서 해당 내용을 찾아 폰트 적용
-                tagMatchesInSource.forEach(tagMatch => {
+                // 번역문에서 찾은 태그로 먼저 적용 (번역문 DOM과 언어가 일치하므로 매칭률 높음)
+                tagMatchesInDisplay.forEach(tagMatch => {
                     if (applyFontToMatchingElements(tagMatch)) {
                         hasChanges = true;
                     }
                 });
+                
+                // 원본에서 찾은 태그도 시도 (번역문에 태그가 없을 경우를 위한 폴백)
+                if (!hasChanges) {
+                    tagMatchesInSource.forEach(tagMatch => {
+                        if (applyFontToMatchingElements(tagMatch)) {
+                            hasChanges = true;
+                        }
+                    });
+                }
                 
                 messageContent.setAttribute('data-tag-processed', 'true');
                 processedMessages.add(messageElement);
