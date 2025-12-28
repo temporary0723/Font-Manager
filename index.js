@@ -2676,7 +2676,8 @@ html body .mes_text [data-custom-tag-font] strong {
     `);
     
     // 마크다운 커스텀이 비활성화되어 있으면 태그 커스텀 CSS만 적용
-    if (!markdownEnabled || !markdownCustom) {
+    if (!markdownEnabled) {
+        console.log('[Font Manager] 마크다운 커스텀 비활성화 - 태그 내부 마크다운 상속 CSS 적용');
         markdownStyle.innerHTML = markdownCss.join('\n');
         document.head.appendChild(markdownStyle);
         return;
