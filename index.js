@@ -292,6 +292,9 @@ function removeAllCustomTagFonts() {
 function applyCustomTagFonts(forceRefresh = false) {
     if (!settings.enabled) return;
     
+    // 성능 측정 시작 (개발자 도구 콘솔에서 확인 가능)
+    const perfStart = performance.now();
+    
     // Observer를 일시적으로 비활성화하여 무한 루프 방지
     if (customTagObserverInstance) {
         customTagObserverInstance.disconnect();
@@ -659,9 +662,17 @@ function applyCustomTagFonts(forceRefresh = false) {
                 return;
             }
             
-            // 강화된 정규화 함수: 특수 문자 변환 및 비-문자/숫자 제거
+            // 강화된 정규화 함수: 특수 문자 변환 및 비-문자/숫자 제거 (메모이제이션 적용)
+            const normalizationCache = new Map();
             const normalizeTextForMatching = (text) => {
-                return (text || '')
+                if (!text) return '';
+                
+                // 캐시 확인 (같은 텍스트를 반복 정규화하지 않음)
+                if (normalizationCache.has(text)) {
+                    return normalizationCache.get(text);
+                }
+                
+                const normalized = text
                     // 특수 문자 정규화 (ellipsis, curly quotes 등)
                     .replace(/…/g, '...')
                     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
@@ -679,6 +690,14 @@ function applyCustomTagFonts(forceRefresh = false) {
                     .replace(/[^\p{L}\p{N}]/gu, '')
                     .toLowerCase()
                     .trim();
+                
+                // 캐시 크기 제한 (메모리 관리)
+                if (normalizationCache.size > 500) {
+                    normalizationCache.clear();
+                }
+                
+                normalizationCache.set(text, normalized);
+                return normalized;
             };
             
             // DOM에서 태그 내용을 찾아 폰트를 적용하는 공통 함수
@@ -692,6 +711,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                 const tagEnd = tagContentNormalized.substring(tagContentNormalized.length - matchLength);
                 
                 let applied = false;
+                let matchCount = 0; // 매칭 횟수 제한 (과도한 반복 방지)
                 
                 // 스타일 생성 헬퍼
                 const createFontSpan = (innerHTML) => {
@@ -737,17 +757,29 @@ function applyCustomTagFonts(forceRefresh = false) {
                 
                 // DOM에서 모든 <p>와 <li> 요소 순회하며 태그 내용과 일치하는 것 찾기
                 const elements = messageContent.querySelectorAll('p, li');
-                elements.forEach(elem => {
-                    // 이미 폰트가 적용된 경우 건너뛰기
-                    if (elem.querySelector('[data-custom-tag-font]')) return;
-                    // 부모에 이미 폰트가 적용된 경우 건너뛰기
-                    if (elem.closest('[data-custom-tag-font]')) return;
+                
+                // 최대 매칭 수 제한 (대부분의 태그는 1-3개 요소에 적용됨)
+                const maxMatches = 20;
+                
+                for (const elem of elements) {
+                    // 이미 충분히 매칭했으면 조기 종료
+                    if (matchCount >= maxMatches) break;
                     
-                    if (isElementMatch(elem.textContent)) {
+                    // 이미 폰트가 적용된 경우 건너뛰기
+                    if (elem.querySelector('[data-custom-tag-font]')) continue;
+                    // 부모에 이미 폰트가 적용된 경우 건너뛰기
+                    if (elem.closest('[data-custom-tag-font]')) continue;
+                    
+                    // 빈 요소 건너뛰기
+                    const elemText = elem.textContent;
+                    if (!elemText || elemText.trim().length < 3) continue;
+                    
+                    if (isElementMatch(elemText)) {
                         elem.innerHTML = createFontSpan(elem.innerHTML);
                         applied = true;
+                        matchCount++;
                     }
-                });
+                }
                 
                 return applied;
             };
@@ -893,6 +925,13 @@ function applyCustomTagFonts(forceRefresh = false) {
                 subtree: true
             });
         }
+    }
+    
+    // 성능 측정 결과 출력 (10ms 이상일 때만 경고)
+    const perfEnd = performance.now();
+    const duration = perfEnd - perfStart;
+    if (duration > 10) {
+        console.warn(`[Font Manager] applyCustomTagFonts took ${duration.toFixed(2)}ms`);
     }
 }
 
