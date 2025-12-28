@@ -686,37 +686,65 @@ function applyCustomTagFonts(forceRefresh = false) {
                 const tagContentNormalized = normalizeTextForMatching(tagMatch.content);
                 if (!tagContentNormalized || tagContentNormalized.length < 3) return false;
                 
+                // 부분 매칭을 위한 시작/끝 부분 추출 (최소 15자, 최대 50자)
+                const matchLength = Math.min(50, Math.max(15, Math.floor(tagContentNormalized.length / 4)));
+                const tagStart = tagContentNormalized.substring(0, matchLength);
+                const tagEnd = tagContentNormalized.substring(tagContentNormalized.length - matchLength);
+                
                 let applied = false;
                 
-                // DOM에서 모든 <p> 요소 순회하며 태그 내용과 일치하는 것 찾기
-                const paragraphs = messageContent.querySelectorAll('p');
-                paragraphs.forEach(p => {
-                    // 이미 폰트가 적용된 경우 건너뛰기
-                    if (p.querySelector('[data-custom-tag-font]')) return;
-                    
-                    const pTextNormalized = normalizeTextForMatching(p.textContent);
-                    if (!pTextNormalized || pTextNormalized.length < 3) return;
-                    
-                    // 태그 내용과 일치하거나 포함 관계인 경우 (더 관대한 매칭)
-                    const isMatch = pTextNormalized === tagContentNormalized || 
-                        (pTextNormalized.length >= 3 && tagContentNormalized.includes(pTextNormalized)) ||
-                        (tagContentNormalized.length >= 3 && pTextNormalized.includes(tagContentNormalized));
-                    
-                    if (isMatch) {
-                        const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
-                        const textColorStyle = tagMatch.config.textColor ? ` color: ${tagMatch.config.textColor} !important;` : '';
-                        let bgColorStyle = '';
-                        if (tagMatch.config.backgroundColor) {
-                            if (tagMatch.config.backgroundHeight && tagMatch.config.backgroundHeight < 100) {
-                                bgColorStyle = ` background: linear-gradient(to top, ${tagMatch.config.backgroundColor} ${tagMatch.config.backgroundHeight}%, transparent ${tagMatch.config.backgroundHeight}%) !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
-                            } else {
-                                bgColorStyle = ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
-                            }
+                // 스타일 생성 헬퍼
+                const createFontSpan = (innerHTML) => {
+                    const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
+                    const textColorStyle = tagMatch.config.textColor ? ` color: ${tagMatch.config.textColor} !important;` : '';
+                    let bgColorStyle = '';
+                    if (tagMatch.config.backgroundColor) {
+                        if (tagMatch.config.backgroundHeight && tagMatch.config.backgroundHeight < 100) {
+                            bgColorStyle = ` background: linear-gradient(to top, ${tagMatch.config.backgroundColor} ${tagMatch.config.backgroundHeight}%, transparent ${tagMatch.config.backgroundHeight}%) !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                        } else {
+                            bgColorStyle = ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
                         }
-                        
-                        // p 태그 내용을 폰트 span으로 감싸기
-                        const originalHTML = p.innerHTML;
-                        p.innerHTML = `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${originalHTML}</span>`;
+                    }
+                    return `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${innerHTML}</span>`;
+                };
+                
+                // 요소가 태그 내용과 매칭되는지 확인하는 함수
+                const isElementMatch = (elementText) => {
+                    const elemNormalized = normalizeTextForMatching(elementText);
+                    if (!elemNormalized || elemNormalized.length < 3) return false;
+                    
+                    // 1. 정확히 일치
+                    if (elemNormalized === tagContentNormalized) return true;
+                    
+                    // 2. 포함 관계
+                    if (elemNormalized.length >= 3 && tagContentNormalized.includes(elemNormalized)) return true;
+                    if (tagContentNormalized.length >= 3 && elemNormalized.includes(tagContentNormalized)) return true;
+                    
+                    // 3. 시작/끝 부분 매칭 (부분 변형에 대응)
+                    const elemStart = elemNormalized.substring(0, matchLength);
+                    const elemEnd = elemNormalized.substring(Math.max(0, elemNormalized.length - matchLength));
+                    
+                    // 태그 시작 부분이 요소에 포함되거나 요소 시작 부분이 태그에 포함
+                    if (tagStart.length >= 10 && elemNormalized.includes(tagStart)) return true;
+                    if (elemStart.length >= 10 && tagContentNormalized.includes(elemStart)) return true;
+                    
+                    // 태그 끝 부분이 요소에 포함되거나 요소 끝 부분이 태그에 포함
+                    if (tagEnd.length >= 10 && elemNormalized.includes(tagEnd)) return true;
+                    if (elemEnd.length >= 10 && tagContentNormalized.includes(elemEnd)) return true;
+                    
+                    return false;
+                };
+                
+                // DOM에서 모든 <p>와 <li> 요소 순회하며 태그 내용과 일치하는 것 찾기
+                const elements = messageContent.querySelectorAll('p, li');
+                elements.forEach(elem => {
+                    // 이미 폰트가 적용된 경우 건너뛰기
+                    if (elem.querySelector('[data-custom-tag-font]')) return;
+                    // 부모에 이미 폰트가 적용된 경우 건너뛰기
+                    if (elem.closest('[data-custom-tag-font]')) return;
+                    
+                    if (isElementMatch(elem.textContent)) {
+                        elem.innerHTML = createFontSpan(elem.innerHTML);
                         applied = true;
                     }
                 });
