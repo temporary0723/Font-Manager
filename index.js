@@ -2653,17 +2653,34 @@ function applyMarkdownCustomFontsInternal() {
     const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
     const markdownCustom = currentPreset?.markdownCustom ?? settings.markdownCustom;
     
-    // 마크다운 커스텀이 비활성화되어 있으면 아무것도 하지 않음
-    if (!markdownEnabled || !markdownCustom) {
-        return;
-    }
-    
     // 새 스타일 엘리먼트 생성
     markdownStyle = document.createElement('style');
     markdownStyle.id = 'font-manager-markdown-custom';
     
     const fonts = settings?.fonts || [];
     const markdownCss = [];
+    
+    // 태그 커스텀 내부 마크다운 요소는 항상 부모 폰트를 상속하도록 설정
+    // (마크다운 커스텀 활성화 여부와 관계없이 항상 적용)
+    markdownCss.push(`
+/* 태그 커스텀 내부 마크다운 요소 - 부모 폰트 상속 */
+html body .mes_text [data-custom-tag-font] q,
+html body .mes_text [data-custom-tag-font] blockquote,
+html body .mes_text [data-custom-tag-font] em,
+html body .mes_text [data-custom-tag-font] u,
+html body .mes_text [data-custom-tag-font] strong {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  color: inherit !important;
+}
+    `);
+    
+    // 마크다운 커스텀이 비활성화되어 있으면 태그 커스텀 CSS만 적용
+    if (!markdownEnabled || !markdownCustom) {
+        markdownStyle.innerHTML = markdownCss.join('\n');
+        document.head.appendChild(markdownStyle);
+        return;
+    }
     
     // 배경 스타일 생성 헬퍼 함수
     const createBackgroundStyle = (backgroundColor, padding, height) => {
