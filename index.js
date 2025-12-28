@@ -711,7 +711,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 const tagEnd = tagContentNormalized.substring(tagContentNormalized.length - matchLength);
                 
                 let applied = false;
-                let matchCount = 0; // 매칭 횟수 제한 (과도한 반복 방지)
                 
                 // 스타일 생성 헬퍼
                 const createFontSpan = (innerHTML) => {
@@ -758,12 +757,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                 // DOM에서 모든 <p>와 <li> 요소 순회하며 태그 내용과 일치하는 것 찾기
                 const elements = messageContent.querySelectorAll('p, li');
                 
-                // 최대 매칭 수 제한 (대부분의 태그는 1-3개 요소에 적용됨)
-                const maxMatches = 20;
-                
                 for (const elem of elements) {
-                    // 이미 충분히 매칭했으면 조기 종료
-                    if (matchCount >= maxMatches) break;
                     
                     // 이미 폰트가 적용된 경우 건너뛰기
                     if (elem.querySelector('[data-custom-tag-font]')) continue;
@@ -777,7 +771,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                     if (isElementMatch(elemText)) {
                         elem.innerHTML = createFontSpan(elem.innerHTML);
                         applied = true;
-                        matchCount++;
                     }
                 }
                 
