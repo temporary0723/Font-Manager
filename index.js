@@ -467,15 +467,18 @@ function applyCustomTagFonts(forceRefresh = false) {
         const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details') !== null;
         
         if (hasLlmTranslatorDetails) {
-            // LLM Translator의 details 구조: 원본 메시지(mes)에서 태그를 찾아 DOM에 적용
+            // LLM Translator의 details 구조: 원본/번역문 메시지에서 태그를 찾아 DOM에 적용
             let hasChanges = false;
             
-            // 원본 메시지에서 태그 찾기 (display_text는 이미 렌더링된 HTML이므로 사용하지 않음)
-            let sourceText = message.mes;
+            // 원본 메시지에서 태그 찾기
+            const sourceText = message.mes;
+            // 번역문(display_text)에서도 태그 찾기
+            const displayText = message.extra?.display_text || '';
             
-            // .original_text만 처리 (원본 메시지와 매칭 가능)
+            // .original_text와 .translated_text 모두 처리
             // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음 (custom- 접두사, _ 언더스코어 변형)
             const originalTextSpans = messageContent.querySelectorAll('.original_text, .custom-original_text, .custom_original_text, .custom-original-text');
+            const translatedTextSpans = messageContent.querySelectorAll('.translated_text, .custom-translated_text, .custom_translated_text, .custom-translated-text');
             
             originalTextSpans.forEach((span, idx) => {
                 // 이미 Font Manager span이 있는지 확인
@@ -620,6 +623,123 @@ function applyCustomTagFonts(forceRefresh = false) {
                                 translatedTextSpan.innerHTML = newTranslatedHTML;
                             }
                         }
+                    }
+                }
+            });
+            
+            // .translated_text도 직접 처리 (번역문에서 태그를 찾아 매칭)
+            // .original_text가 없거나 매칭이 안 된 경우를 위해
+            translatedTextSpans.forEach((span) => {
+                // 이미 Font Manager span이 있는지 확인
+                if (span.querySelector('[data-custom-tag-font]')) {
+                    return; // 이미 처리됨
+                }
+                
+                // DOM에서 텍스트만 추출 (sanitized)
+                const spanText = span.textContent.trim();
+                
+                // 번역문(display_text)에서 이 텍스트를 포함하는 태그 블록 찾기
+                let matchedFontFamily = null;
+                let matchedFontSize = null;
+                let matchedTag = null;
+                let bestMatchLength = 0;
+                
+                // 정규화 함수
+                const normalizeText = (text) => {
+                    return (text || '')
+                        .replace(/…/g, '...')
+                        .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+                        .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+                        .replace(/[\u2013\u2014]/g, '-')
+                        .replace(/^\s*[-*]\s+/gm, '')
+                        .replace(/[\r\n]+/g, '')
+                        .replace(/\*\*|__/g, '')
+                        .replace(/\*|_/g, '')
+                        .replace(/~~/g, '')
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/&[a-zA-Z0-9#]+;/g, '')
+                        .replace(/\s+/g, '')
+                        .replace(/[^\p{L}\p{N}]/gu, '')
+                        .toLowerCase()
+                        .trim();
+                };
+                
+                const spanTextNormalized = normalizeText(spanText);
+                if (!spanTextNormalized || spanTextNormalized.length < 5) return;
+                
+                tagConfigs.forEach(tagConfig => {
+                    if (matchedFontFamily) return;
+                    
+                    // 번역문(displayText)에서 태그 찾기
+                    const matches = displayText ? [...displayText.matchAll(tagConfig.regex)] : [];
+                    for (const match of matches) {
+                        const tagContent = match[1];
+                        const tagContentNormalized = normalizeText(tagContent);
+                        
+                        if (!tagContentNormalized) continue;
+                        
+                        // 1순위: 정확히 일치
+                        if (tagContentNormalized === spanTextNormalized) {
+                            matchedFontFamily = tagConfig.fontFamily;
+                            matchedFontSize = tagConfig.fontSize;
+                            matchedTag = tagConfig;
+                            break;
+                        }
+                        
+                        // 2순위: 태그 내용이 DOM 텍스트를 포함
+                        if (spanTextNormalized.length >= 5 && tagContentNormalized.includes(spanTextNormalized)) {
+                            if (spanTextNormalized.length > bestMatchLength) {
+                                matchedFontFamily = tagConfig.fontFamily;
+                                matchedFontSize = tagConfig.fontSize;
+                                matchedTag = tagConfig;
+                                bestMatchLength = spanTextNormalized.length;
+                            }
+                        }
+                        
+                        // 3순위: DOM 텍스트가 태그 내용을 포함
+                        if (!matchedFontFamily && tagContentNormalized.length >= 5 && spanTextNormalized.includes(tagContentNormalized)) {
+                            if (tagContentNormalized.length > bestMatchLength) {
+                                matchedFontFamily = tagConfig.fontFamily;
+                                matchedFontSize = tagConfig.fontSize;
+                                matchedTag = tagConfig;
+                                bestMatchLength = tagContentNormalized.length;
+                            }
+                        }
+                    }
+                });
+                
+                // 매칭된 태그가 있으면 폰트 적용
+                if (matchedFontFamily) {
+                    const fontSizeStyle = matchedFontSize ? ` font-size: ${matchedFontSize}px !important;` : '';
+                    const textColorStyle = matchedTag?.textColor ? ` color: ${matchedTag.textColor} !important;` : '';
+                    let bgColorStyle = '';
+                    if (matchedTag?.backgroundColor) {
+                        const padding = matchedTag.backgroundPadding || 2;
+                        if (matchedTag.backgroundHeight && matchedTag.backgroundHeight < 100) {
+                            bgColorStyle = ` background: linear-gradient(to top, ${matchedTag.backgroundColor} ${matchedTag.backgroundHeight}%, transparent ${matchedTag.backgroundHeight}%) !important; padding: ${padding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                        } else {
+                            bgColorStyle = ` background-color: ${matchedTag.backgroundColor} !important; padding: ${padding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                        }
+                    }
+                    
+                    // 과한 개행 정리
+                    const cleanupContent = (html) => {
+                        let cleaned = html.trim();
+                        cleaned = cleaned.replace(/\n/g, '<br>');
+                        cleaned = cleaned.replace(/<\/?ul>/gi, '').replace(/<\/?ol>/gi, '');
+                        cleaned = cleaned.replace(/<li>/gi, '').replace(/<\/li>/gi, '<br>');
+                        cleaned = cleaned.replace(/<\/?p>/gi, '<br>');
+                        cleaned = cleaned.replace(/(<br\s*\/?>\s*){2,}/gi, '<br>');
+                        cleaned = cleaned.replace(/^(<br\s*\/?>)+/i, '').replace(/(<br\s*\/?>)+$/i, '');
+                        return cleaned.trim();
+                    };
+                    
+                    const contentCleaned = cleanupContent(span.innerHTML);
+                    const newHTML = `<span data-custom-tag-font="${matchedFontFamily}" style="font-family: '${matchedFontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${contentCleaned}</span>`;
+                    
+                    if (span.innerHTML.trim() !== newHTML.trim()) {
+                        span.innerHTML = newHTML;
+                        hasChanges = true;
                     }
                 }
             });
