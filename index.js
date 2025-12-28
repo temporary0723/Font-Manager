@@ -496,17 +496,25 @@ function applyCustomTagFonts(forceRefresh = false) {
                     for (const match of matches) {
                         const tagContent = match[1]; // 태그 내용
                         
-                        // 정규화 함수: 모든 공백/줄바꿈/마크다운 기호 제거
+                        // 정규화 함수: 특수 문자 변환 및 비-문자/숫자 제거
                         const normalizeText = (text) => {
                             return (text || '')
-                                .replace(/^\s*[-*]\s+/gm, '')   // 1. 리스트 마커 제거 (줄바꿈 있는 상태에서)
-                                .replace(/[\r\n]+/g, '')        // 2. 모든 줄바꿈 제거 (Windows \r\n 포함)
-                                .replace(/\*\*|__/g, '')        // 3. 볼드 마크다운 기호 제거
-                                .replace(/\*|_/g, '')           // 4. 이탤릭 마크다운 기호 제거
-                                .replace(/~~/g, '')             // 5. 취소선 마크다운 기호 제거
-                                .replace(/<[^>]*>/g, '')        // 6. HTML 태그 제거 (잔여 태그 정리)
-                                .replace(/&[a-zA-Z0-9#]+;/g, '') // 7. HTML 엔티티 제거
-                                .replace(/\s+/g, '')            // 8. 모든 공백 제거
+                                // 특수 문자 정규화 (ellipsis, curly quotes 등)
+                                .replace(/…/g, '...')
+                                .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+                                .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+                                .replace(/[\u2013\u2014]/g, '-')
+                                .replace(/^\s*[-*]\s+/gm, '')   // 리스트 마커 제거
+                                .replace(/[\r\n]+/g, '')        // 모든 줄바꿈 제거
+                                .replace(/\*\*|__/g, '')        // 볼드 마크다운 기호 제거
+                                .replace(/\*|_/g, '')           // 이탤릭 마크다운 기호 제거
+                                .replace(/~~/g, '')             // 취소선 마크다운 기호 제거
+                                .replace(/<[^>]*>/g, '')        // HTML 태그 제거
+                                .replace(/&[a-zA-Z0-9#]+;/g, '') // HTML 엔티티 제거
+                                .replace(/\s+/g, '')            // 모든 공백 제거
+                                // 알파벳, 숫자, 한글, 일본어, 중국어만 남기기
+                                .replace(/[^\p{L}\p{N}]/gu, '')
+                                .toLowerCase()
                                 .trim();
                         };
                         
@@ -651,59 +659,80 @@ function applyCustomTagFonts(forceRefresh = false) {
                 return;
             }
             
+            // 강화된 정규화 함수: 특수 문자 변환 및 비-문자/숫자 제거
+            const normalizeTextForMatching = (text) => {
+                return (text || '')
+                    // 특수 문자 정규화 (ellipsis, curly quotes 등)
+                    .replace(/…/g, '...')
+                    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+                    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+                    .replace(/[\u2013\u2014]/g, '-')
+                    .replace(/^\s*[-*]\s+/gm, '')
+                    .replace(/[\r\n]+/g, '')
+                    .replace(/\*\*|__/g, '')
+                    .replace(/\*|_/g, '')
+                    .replace(/~~/g, '')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/&[a-zA-Z0-9#]+;/g, '')
+                    .replace(/\s+/g, '')
+                    // 알파벳, 숫자, 한글, 일본어, 중국어만 남기기 (비교를 위해)
+                    .replace(/[^\p{L}\p{N}]/gu, '')
+                    .toLowerCase()
+                    .trim();
+            };
+            
+            // DOM에서 태그 내용을 찾아 폰트를 적용하는 공통 함수
+            const applyFontToMatchingElements = (tagMatch) => {
+                const tagContentNormalized = normalizeTextForMatching(tagMatch.content);
+                if (!tagContentNormalized || tagContentNormalized.length < 3) return false;
+                
+                let applied = false;
+                
+                // DOM에서 모든 <p> 요소 순회하며 태그 내용과 일치하는 것 찾기
+                const paragraphs = messageContent.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    // 이미 폰트가 적용된 경우 건너뛰기
+                    if (p.querySelector('[data-custom-tag-font]')) return;
+                    
+                    const pTextNormalized = normalizeTextForMatching(p.textContent);
+                    if (!pTextNormalized || pTextNormalized.length < 3) return;
+                    
+                    // 태그 내용과 일치하거나 포함 관계인 경우 (더 관대한 매칭)
+                    const isMatch = pTextNormalized === tagContentNormalized || 
+                        (pTextNormalized.length >= 3 && tagContentNormalized.includes(pTextNormalized)) ||
+                        (tagContentNormalized.length >= 3 && pTextNormalized.includes(tagContentNormalized));
+                    
+                    if (isMatch) {
+                        const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
+                        const textColorStyle = tagMatch.config.textColor ? ` color: ${tagMatch.config.textColor} !important;` : '';
+                        let bgColorStyle = '';
+                        if (tagMatch.config.backgroundColor) {
+                            if (tagMatch.config.backgroundHeight && tagMatch.config.backgroundHeight < 100) {
+                                bgColorStyle = ` background: linear-gradient(to top, ${tagMatch.config.backgroundColor} ${tagMatch.config.backgroundHeight}%, transparent ${tagMatch.config.backgroundHeight}%) !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                            } else {
+                                bgColorStyle = ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+                            }
+                        }
+                        
+                        // p 태그 내용을 폰트 span으로 감싸기
+                        const originalHTML = p.innerHTML;
+                        p.innerHTML = `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${originalHTML}</span>`;
+                        applied = true;
+                    }
+                });
+                
+                return applied;
+            };
+            
             // display_text가 있는 경우 (번역문 등): DOM을 재구성하지 않고 기존 DOM에서 태그 내용 찾아 적용
             if (hasDisplayText) {
                 let hasChanges = false;
                 
-                // 정규화 함수
-                const normalizeText = (text) => {
-                    return (text || '')
-                        .replace(/^\s*[-*]\s+/gm, '')
-                        .replace(/[\r\n]+/g, '')
-                        .replace(/\*\*|__/g, '')
-                        .replace(/\*|_/g, '')
-                        .replace(/~~/g, '')
-                        .replace(/<[^>]*>/g, '')
-                        .replace(/&[a-zA-Z0-9#]+;/g, '')
-                        .replace(/\s+/g, '')
-                        .trim();
-                };
-                
                 // 각 태그 매칭에 대해 DOM에서 해당 내용을 찾아 폰트 적용
                 tagMatchesInSource.forEach(tagMatch => {
-                    const tagContentNormalized = normalizeText(tagMatch.content);
-                    if (!tagContentNormalized || tagContentNormalized.length < 5) return;
-                    
-                    // DOM에서 모든 <p> 요소 순회하며 태그 내용과 일치하는 것 찾기
-                    const paragraphs = messageContent.querySelectorAll('p');
-                    paragraphs.forEach(p => {
-                        // 이미 폰트가 적용된 경우 건너뛰기
-                        if (p.querySelector('[data-custom-tag-font]')) return;
-                        
-                        const pTextNormalized = normalizeText(p.textContent);
-                        
-                        // 태그 내용과 일치하거나 포함 관계인 경우
-                        if (pTextNormalized === tagContentNormalized || 
-                            (pTextNormalized.length >= 5 && tagContentNormalized.includes(pTextNormalized)) ||
-                            (tagContentNormalized.length >= 5 && pTextNormalized.includes(tagContentNormalized))) {
-                            
-                            const fontSizeStyle = tagMatch.config.fontSize ? ` font-size: ${tagMatch.config.fontSize}px !important;` : '';
-                            const textColorStyle = tagMatch.config.textColor ? ` color: ${tagMatch.config.textColor} !important;` : '';
-                            let bgColorStyle = '';
-                            if (tagMatch.config.backgroundColor) {
-                                if (tagMatch.config.backgroundHeight && tagMatch.config.backgroundHeight < 100) {
-                                    bgColorStyle = ` background: linear-gradient(to top, ${tagMatch.config.backgroundColor} ${tagMatch.config.backgroundHeight}%, transparent ${tagMatch.config.backgroundHeight}%) !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
-                                } else {
-                                    bgColorStyle = ` background-color: ${tagMatch.config.backgroundColor} !important; padding: ${tagMatch.config.backgroundPadding}px; border-radius: 3px; display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
-                                }
-                            }
-                            
-                            // p 태그 내용을 폰트 span으로 감싸기
-                            const originalHTML = p.innerHTML;
-                            p.innerHTML = `<span data-custom-tag-font="${tagMatch.config.fontFamily}" style="font-family: '${tagMatch.config.fontFamily}', sans-serif !important;${fontSizeStyle}${textColorStyle}${bgColorStyle}">${originalHTML}</span>`;
-                            hasChanges = true;
-                        }
-                    });
+                    if (applyFontToMatchingElements(tagMatch)) {
+                        hasChanges = true;
+                    }
                 });
                 
                 messageContent.setAttribute('data-tag-processed', 'true');
@@ -810,6 +839,13 @@ function applyCustomTagFonts(forceRefresh = false) {
                     if (currentHTML !== newHTML) {
                         messageContent.innerHTML = formattedHTML;
                     }
+                    
+                    // 마커 방식이 실패한 태그에 대해 DOM 기반 폴백 적용
+                    // (일부 마커가 messageFormatting에서 변환되어 교체되지 않은 경우)
+                    tagMatchesInSource.forEach(tagMatch => {
+                        applyFontToMatchingElements(tagMatch);
+                    });
+                    
                     messageContent.setAttribute('data-tag-processed', 'true');
                     processedMessages.add(messageElement);
                 } else {
