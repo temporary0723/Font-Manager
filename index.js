@@ -2263,10 +2263,12 @@ function updateUIFont() {
     const currentPreset = presets.find(p => p.id === currentPresetId);
     const markdownEnabled = currentPreset?.markdownCustomEnabled ?? settings.markdownCustomEnabled;
     
-    // 마크다운 커스텀이 활성화되어 있으면 마크다운 요소를 제외하는 :not() 추가
-    const markdownExclusions = markdownEnabled 
-        ? ':not(em):not(strong):not(q):not(blockquote):not(u)'
-        : '';
+    // 마크다운 요소를 항상 제외 (마크다운 커스텀 활성화 여부와 관계없이)
+    // 이렇게 하면:
+    // - 마크다운 커스텀 활성화 시: 마크다운 커스텀 CSS가 적용됨
+    // - 마크다운 커스텀 비활성화 시: 브라우저/SillyTavern 기본 스타일 적용
+    // - 태그 커스텀 내부일 경우: 태그 커스텀의 inherit CSS가 적용됨
+    const markdownExclusions = ':not(em):not(strong):not(q):not(blockquote):not(u):not([data-custom-tag-font])';
     
     // CSS 변수 설정 (전역 설정 우선)
     const uiFontSize = tempUiFontSize ?? settings.uiFontSize ?? 14;
