@@ -758,7 +758,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 const elements = messageContent.querySelectorAll('p, li');
                 
                 for (const elem of elements) {
-                    
                     // 이미 폰트가 적용된 경우 건너뛰기
                     if (elem.querySelector('[data-custom-tag-font]')) continue;
                     // 부모에 이미 폰트가 적용된 경우 건너뛰기
@@ -768,7 +767,13 @@ function applyCustomTagFonts(forceRefresh = false) {
                     const elemText = elem.textContent;
                     if (!elemText || elemText.trim().length < 3) continue;
                     
-                    if (isElementMatch(elemText)) {
+                    // 매칭 체크 - STATUS 같은 전체 태그는 모든 하위 요소가 매칭되어야 함
+                    const elemNormalized = normalizeTextForMatching(elemText);
+                    
+                    // 포함 관계 체크 (가장 중요한 조건)
+                    const isContained = elemNormalized.length >= 3 && tagContentNormalized.includes(elemNormalized);
+                    
+                    if (isContained || isElementMatch(elemText)) {
                         elem.innerHTML = createFontSpan(elem.innerHTML);
                         applied = true;
                     }
