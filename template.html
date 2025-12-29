@@ -71,6 +71,18 @@
                 <input type="range" id="ui-font-weight-slider" min="0" max="1" value="0" step="0.1">
                 <span id="ui-font-weight-value">0.0px</span>
             </div>
+            <div class="font-control-row">
+                <label>줄 간격</label>
+                <input type="range" id="ui-line-height-slider" min="0" max="3" value="1.2" step="0.1">
+                <span id="ui-line-height-value">1.2rem</span>
+            </div>
+            <div class="font-control-row font-color-row">
+                <label>색상</label>
+                <div class="font-color-input-wrapper">
+                    <input type="text" id="ui-font-color-input" class="font-color-input" placeholder="#121212">
+                    <div class="font-color-preview" id="ui-font-color-preview" title="색상 미리보기"></div>
+                </div>
+            </div>
             <div class="default-button-row">
                 <button id="ui-font-reset-btn" class="default-btn">기본값</button>
             </div>
@@ -108,6 +120,144 @@
             </div>
             <div class="default-button-row">
                 <button id="message-font-reset-btn" class="default-btn">기본값</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 마크다운 커스텀 섹션 -->
+    <div class="markdown-custom-section" id="markdown-custom-section">
+        <h3>마크다운 커스텀</h3>
+        <div class="markdown-toggle-row">
+            <label class="markdown-toggle-label">
+                <input type="checkbox" id="markdown-custom-enabled-toggle" class="markdown-toggle">
+                <span>마크다운 커스텀 활성화</span>
+            </label>
+        </div>
+        <div class="markdown-font-selectors" id="markdown-font-selectors">
+            <!-- 대화문 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">대화문</label>
+                    <span class="markdown-guide">"따옴표"로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <div class="markdown-control-row">
+                        <select id="markdown-dialogue-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-dialogue-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                    </div>
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-dialogue-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-dialogue-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-dialogue-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                        <input type="number" id="markdown-dialogue-height-input" class="markdown-height-input" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
+                    </div>
+                </div>
+            </div>
+            <!-- 이탤릭체 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">이탤릭체</label>
+                    <span class="markdown-guide">*별표 하나*로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <div class="markdown-control-row">
+                        <select id="markdown-italic-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-italic-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                    </div>
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-italic-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-italic-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-italic-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                        <input type="number" id="markdown-italic-height-input" class="markdown-height-input" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
+                    </div>
+                </div>
+            </div>
+            <!-- 밑줄 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">밑줄</label>
+                    <span class="markdown-guide">__밑줄__로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <div class="markdown-control-row">
+                        <select id="markdown-underline-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-underline-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                    </div>
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-underline-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-underline-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-underline-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                        <input type="number" id="markdown-underline-height-input" class="markdown-height-input" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
+                    </div>
+                </div>
+            </div>
+            <!-- 강조 -->
+            <div class="markdown-font-group">
+                <div class="markdown-font-header">
+                    <label class="markdown-label">강조</label>
+                    <span class="markdown-guide">**별표 둘**로 둘러싸인 텍스트</span>
+                </div>
+                <div class="markdown-font-controls">
+                    <div class="markdown-control-row">
+                        <select id="markdown-strong-font-dropdown" class="markdown-font-dropdown">
+                            <!-- 폰트 옵션들이 여기에 동적으로 삽입됩니다 -->
+                        </select>
+                        <input type="number" id="markdown-strong-size-input" class="markdown-size-input" min="8" max="40" step="1" placeholder="크기">
+                    </div>
+                    <div class="markdown-control-row">
+                        <div class="markdown-color-picker-wrapper">
+                            <input type="text" id="markdown-strong-bg-color-text" class="markdown-bg-color-text" placeholder="rgba(13, 12, 18, 0.7)">
+                            <div id="markdown-strong-bg-color-preview" class="markdown-bg-color-preview" title="색상 미리보기"></div>
+                        </div>
+                        <input type="number" id="markdown-strong-padding-input" class="markdown-padding-input" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
+                        <input type="number" id="markdown-strong-height-input" class="markdown-height-input" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 태그 커스텀 섹션 -->
+    <div class="custom-tag-section" id="custom-tag-section">
+        <h3>태그 커스텀</h3>
+        <div class="custom-tag-toggle-row">
+            <label class="custom-tag-toggle-label">
+                <input type="checkbox" id="custom-tag-enabled-toggle" class="custom-tag-toggle">
+                <span>태그 커스텀 활성화</span>
+            </label>
+        </div>
+        <div class="custom-tag-content" id="custom-tag-content">
+            <div class="custom-tag-guide">
+                <p>메시지 내부의 특정 태그 사이에 있는 텍스트를 선택한 폰트로 표시합니다.</p>
+                <p>예: &lt;MEMO&gt;메모 내용&lt;/MEMO&gt; → MEMO 태그 사이의 텍스트가 선택한 폰트로 표시됩니다.</p>
+                <p>• 대소문자 구분 없음 (MEMO, Memo, memo 모두 동일하게 처리)</p>
+            </div>
+            <div class="custom-tag-add-form">
+                <div class="custom-tag-input-row">
+                    <input type="text" id="custom-tag-name-input" class="custom-tag-name-input" placeholder="태그 이름 (예: MEMO)" maxlength="50">
+                    <select id="custom-tag-font-dropdown" class="custom-tag-font-dropdown">
+                        <option value="">폰트 선택</option>
+                    </select>
+                </div>
+                <button id="add-custom-tag-btn" class="add-custom-tag-btn">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>태그 추가</span>
+                </button>
+            </div>
+            <div class="custom-tag-list" id="custom-tag-list">
+                <!-- 추가된 태그들이 여기에 표시됩니다 -->
             </div>
         </div>
     </div>
