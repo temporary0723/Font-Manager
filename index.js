@@ -346,7 +346,7 @@ function applyCustomTagFonts(forceRefresh = false) {
     // 폰트 정보 미리 가져오기
     const fonts = settings?.fonts || [];
     const tagConfigs = customTags
-        .filter(tag => tag.tagName && tag.fontName)
+        .filter(tag => tag.tagName && tag.fontName && (tag.enabled ?? true)) // enabled 체크 추가
         .map(tag => {
             const selectedFont = fonts.find(f => f.name === tag.fontName);
             const actualFontFamily = selectedFont?.fontFamily || tag.fontName;
@@ -1781,6 +1781,10 @@ function renderMarkdownCustomSection(template) {
     const types = ['dialogue', 'italic', 'underline', 'strong'];
     
     types.forEach(type => {
+        // 개별 항목 활성화 체크박스 설정
+        const itemEnabled = markdownCustom[type]?.enabled ?? true; // 기본값은 활성화
+        template.find(`#markdown-${type}-enabled`).prop('checked', itemEnabled);
+        
         // 폰트 드롭다운 설정
         const dropdown = template.find(`#markdown-${type}-font-dropdown`);
         dropdown.empty();
@@ -1836,6 +1840,9 @@ function renderMarkdownCustomSection(template) {
         } else {
             heightInput.val('');
         }
+        
+        // 개별 항목 활성화 상태에 따라 컨트롤 활성화/비활성화
+        updateMarkdownItemState(template, type, itemEnabled);
     });
     
     // 마크다운 활성화 상태에 따라 섹션 활성화/비활성화
@@ -1848,10 +1855,31 @@ function updateMarkdownSectionState(template, enabled) {
     
     if (enabled) {
         markdownSelectors.removeClass('disabled-section');
-        markdownSelectors.find('select, input').prop('disabled', false);
+        // 개별 항목 체크박스는 항상 활성화
+        markdownSelectors.find('.markdown-item-checkbox').prop('disabled', false);
+        // 각 항목별로 개별 enabled 상태에 따라 컨트롤 활성화/비활성화
+        const types = ['dialogue', 'italic', 'underline', 'strong'];
+        types.forEach(type => {
+            const itemEnabled = template.find(`#markdown-${type}-enabled`).prop('checked');
+            updateMarkdownItemState(template, type, itemEnabled);
+        });
     } else {
         markdownSelectors.addClass('disabled-section');
         markdownSelectors.find('select, input').prop('disabled', true);
+    }
+}
+
+// 마크다운 개별 항목 활성화 상태 업데이트
+function updateMarkdownItemState(template, type, enabled) {
+    const fontGroup = template.find(`.markdown-font-group[data-type="${type}"]`);
+    const controls = fontGroup.find('.markdown-font-controls');
+    
+    if (enabled) {
+        controls.removeClass('disabled-section');
+        controls.find('select, input').prop('disabled', false);
+    } else {
+        controls.addClass('disabled-section');
+        controls.find('select, input').prop('disabled', true);
     }
 }
 
@@ -1950,8 +1978,10 @@ function renderCustomTagList(template) {
             const fontName = tag.fontName || '기본 폰트';
             // 태그 이름을 대문자로 표시
             const tagNameUpper = (tag.tagName || '').toUpperCase();
-            // 폰트 사이즈 기본값 (없으면 현재 메시지 폰트 크기)
-            const fontSize = tag.fontSize || (currentPreset?.chatFontSize ?? settings?.chatFontSize ?? 14);
+            // 폰트 사이즈 (null/undefined면 빈 문자열로 표시, 실제 적용 시 기본 메시지 폰트 크기 사용)
+            const fontSize = tag.fontSize ?? '';
+            // 태그 개별 활성화 상태 (기본값: true)
+            const tagEnabled = tag.enabled ?? true;
             
             // 폰트 드롭다운 옵션 생성
             let fontOptions = '<option value="">기본 폰트</option>';
@@ -1966,39 +1996,45 @@ function renderCustomTagList(template) {
             const bgHeight = tag.backgroundHeight || '';
             const textColorStyle = textColor ? `background-color: ${textColor};` : 'background-color: transparent;';
             const bgColorStyle = bgColor ? `background-color: ${bgColor};` : 'background-color: transparent;';
+            const disabledClass = tagEnabled ? '' : ' disabled-section';
             
             listHtml += `
-                <div class="custom-tag-item">
+                <div class="custom-tag-item" data-id="${tag.id}">
                     <div class="custom-tag-header">
-                        <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
+                        <label class="custom-tag-item-toggle">
+                            <input type="checkbox" class="custom-tag-item-checkbox" data-id="${tag.id}" ${tagEnabled ? 'checked' : ''}>
+                            <span class="custom-tag-name">&lt;${tagNameUpper}&gt;</span>
+                        </label>
                         <button class="remove-custom-tag-btn" data-id="${tag.id}" title="태그 삭제">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
-                    <div class="custom-tag-control-row">
-                        <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택">
-                            ${fontOptions}
-                        </select>
-                    </div>
-                    <div class="custom-tag-color-section">
-                        <span class="custom-tag-color-label">텍스트 색상</span>
+                    <div class="custom-tag-controls${disabledClass}">
                         <div class="custom-tag-control-row">
-                            <div class="markdown-color-picker-wrapper">
-                                <input type="text" class="markdown-bg-color-text custom-tag-text-color-input" data-id="${tag.id}" value="${textColor}" placeholder="#121212">
-                                <div class="markdown-bg-color-preview custom-tag-text-color-preview" style="${textColorStyle}" title="텍스트 색상 미리보기"></div>
-                            </div>
-                            <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" placeholder="크기" title="폰트 크기 (px)">
+                            <select class="custom-tag-font-select" data-id="${tag.id}" title="폰트 선택" ${tagEnabled ? '' : 'disabled'}>
+                                ${fontOptions}
+                            </select>
                         </div>
-                    </div>
-                    <div class="custom-tag-color-section">
-                        <span class="custom-tag-color-label">배경 색상</span>
-                        <div class="custom-tag-control-row">
-                            <div class="markdown-color-picker-wrapper">
-                                <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)">
-                                <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="배경 색상 미리보기"></div>
+                        <div class="custom-tag-color-section">
+                            <span class="custom-tag-color-label">텍스트 색상</span>
+                            <div class="custom-tag-control-row">
+                                <div class="markdown-color-picker-wrapper">
+                                    <input type="text" class="markdown-bg-color-text custom-tag-text-color-input" data-id="${tag.id}" value="${textColor}" placeholder="#121212" ${tagEnabled ? '' : 'disabled'}>
+                                    <div class="markdown-bg-color-preview custom-tag-text-color-preview" style="${textColorStyle}" title="텍스트 색상 미리보기"></div>
+                                </div>
+                                <input type="number" class="custom-tag-size-input" data-id="${tag.id}" value="${fontSize}" min="8" max="40" step="1" placeholder="크기" title="폰트 크기 (px)" ${tagEnabled ? '' : 'disabled'}>
                             </div>
-                            <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)">
-                            <input type="number" class="markdown-height-input custom-tag-height-input" data-id="${tag.id}" value="${bgHeight}" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)">
+                        </div>
+                        <div class="custom-tag-color-section">
+                            <span class="custom-tag-color-label">배경 색상</span>
+                            <div class="custom-tag-control-row">
+                                <div class="markdown-color-picker-wrapper">
+                                    <input type="text" class="markdown-bg-color-text custom-tag-bg-color-input" data-id="${tag.id}" value="${bgColor}" placeholder="rgba(13, 12, 18, 0.7)" ${tagEnabled ? '' : 'disabled'}>
+                                    <div class="markdown-bg-color-preview" style="${bgColorStyle}" title="배경 색상 미리보기"></div>
+                                </div>
+                                <input type="number" class="markdown-padding-input custom-tag-padding-input" data-id="${tag.id}" value="${padding}" min="1" max="10" step="1" placeholder="여백" title="배경 여백 (1-10px)" ${tagEnabled ? '' : 'disabled'}>
+                                <input type="number" class="markdown-height-input custom-tag-height-input" data-id="${tag.id}" value="${bgHeight}" min="1" max="100" step="1" placeholder="높이%" title="배경 높이 (1-100%)" ${tagEnabled ? '' : 'disabled'}>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2845,8 +2881,9 @@ html body .mes_text [data-custom-tag-font] strong {
         }
     };
     
-    // 대화문 (q, blockquote)
-    if (markdownCustom.dialogue?.fontName || markdownCustom.dialogue?.backgroundColor) {
+    // 대화문 (q, blockquote) - enabled 체크 추가
+    const dialogueEnabled = markdownCustom.dialogue?.enabled ?? true;
+    if (dialogueEnabled && (markdownCustom.dialogue?.fontName || markdownCustom.dialogue?.backgroundColor)) {
         const font = fonts.find(f => f.name === markdownCustom.dialogue.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.dialogue.fontName;
         const fontSize = markdownCustom.dialogue.fontSize;
@@ -2866,8 +2903,9 @@ ${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
-    // 이탤릭체 (em)
-    if (markdownCustom.italic?.fontName || markdownCustom.italic?.backgroundColor) {
+    // 이탤릭체 (em) - enabled 체크 추가
+    const italicEnabled = markdownCustom.italic?.enabled ?? true;
+    if (italicEnabled && (markdownCustom.italic?.fontName || markdownCustom.italic?.backgroundColor)) {
         const font = fonts.find(f => f.name === markdownCustom.italic.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.italic.fontName;
         const fontSize = markdownCustom.italic.fontSize;
@@ -2886,8 +2924,9 @@ ${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
-    // 밑줄 (u)
-    if (markdownCustom.underline?.fontName || markdownCustom.underline?.backgroundColor) {
+    // 밑줄 (u) - enabled 체크 추가
+    const underlineEnabled = markdownCustom.underline?.enabled ?? true;
+    if (underlineEnabled && (markdownCustom.underline?.fontName || markdownCustom.underline?.backgroundColor)) {
         const font = fonts.find(f => f.name === markdownCustom.underline.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.underline.fontName;
         const fontSize = markdownCustom.underline.fontSize;
@@ -2906,8 +2945,9 @@ ${fontSizeStyle}${backgroundColorStyle}}
         `);
     }
     
-    // 강조 (strong)
-    if (markdownCustom.strong?.fontName || markdownCustom.strong?.backgroundColor) {
+    // 강조 (strong) - enabled 체크 추가
+    const strongEnabled = markdownCustom.strong?.enabled ?? true;
+    if (strongEnabled && (markdownCustom.strong?.fontName || markdownCustom.strong?.backgroundColor)) {
         const font = fonts.find(f => f.name === markdownCustom.strong.fontName);
         const fontFamily = font?.fontFamily || markdownCustom.strong.fontName;
         const fontSize = markdownCustom.strong.fontSize;
@@ -3212,6 +3252,48 @@ function setupEventListeners(template) {
         applyMarkdownCustomFonts(); // 마크다운 설정 변경 시 폰트 업데이트
     });
     
+    // 마크다운 개별 항목 활성화 체크박스 이벤트
+    template.find('.markdown-item-checkbox').off('change').on('change', function() {
+        const type = $(this).data('type');
+        const enabled = $(this).prop('checked');
+        
+        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === currentPresetId);
+        
+        if (currentPreset) {
+            if (!currentPreset.markdownCustom) {
+                currentPreset.markdownCustom = {
+                    dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true }
+                };
+            }
+            if (!currentPreset.markdownCustom[type]) {
+                currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true };
+            }
+            currentPreset.markdownCustom[type].enabled = enabled;
+        } else {
+            if (!settings.markdownCustom) {
+                settings.markdownCustom = {
+                    dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true },
+                    strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true }
+                };
+            }
+            if (!settings.markdownCustom[type]) {
+                settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null, enabled: true };
+            }
+            settings.markdownCustom[type].enabled = enabled;
+        }
+        
+        updateMarkdownItemState(template, type, enabled);
+        saveSettings();
+        applyMarkdownCustomFonts();
+    });
+    
     // 마크다운 타입별 폰트 드롭다운 및 사이즈 입력 이벤트
     const markdownTypes = ['dialogue', 'italic', 'underline', 'strong'];
     markdownTypes.forEach(type => {
@@ -3257,9 +3339,46 @@ function setupEventListeners(template) {
         
         // 폰트 사이즈 입력 이벤트
         template.find(`#markdown-${type}-size-input`).off('change').on('change', function() {
-            const fontSize = parseInt($(this).val());
+            const inputVal = $(this).val().trim();
+            const fontSize = parseInt(inputVal);
             
-            if (!isNaN(fontSize) && fontSize >= 8 && fontSize <= 40) {
+            // 빈 값이면 null로 저장 (기본 메시지 폰트 크기 사용)
+            if (inputVal === '') {
+                const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+                const presets = settings?.presets || [];
+                const currentPreset = presets.find(p => p.id === currentPresetId);
+                
+                if (currentPreset) {
+                    if (!currentPreset.markdownCustom) {
+                        currentPreset.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null }
+                        };
+                    }
+                    if (!currentPreset.markdownCustom[type]) {
+                        currentPreset.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null };
+                    }
+                    currentPreset.markdownCustom[type].fontSize = null;
+                } else {
+                    if (!settings.markdownCustom) {
+                        settings.markdownCustom = {
+                            dialogue: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            italic: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            underline: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null },
+                            strong: { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null }
+                        };
+                    }
+                    if (!settings.markdownCustom[type]) {
+                        settings.markdownCustom[type] = { fontName: null, fontSize: null, backgroundColor: null, backgroundPadding: null };
+                    }
+                    settings.markdownCustom[type].fontSize = null;
+                }
+                
+                saveSettings();
+                applyMarkdownCustomFonts();
+            } else if (!isNaN(fontSize) && fontSize >= 8 && fontSize <= 40) {
                 const currentPresetId = selectedPresetId ?? settings?.currentPreset;
                 const presets = settings?.presets || [];
                 const currentPreset = presets.find(p => p.id === currentPresetId);
@@ -3294,7 +3413,7 @@ function setupEventListeners(template) {
                 
                 saveSettings();
                 applyMarkdownCustomFonts();
-            } else if (fontSize < 8 || fontSize > 40) {
+            } else {
                 alert('폰트 크기는 8px에서 40px 사이여야 합니다.');
                 const currentPresetId = selectedPresetId ?? settings?.currentPreset;
                 const presets = settings?.presets || [];
@@ -4202,6 +4321,37 @@ function setupCustomTagEventListeners(template) {
         }
     });
     
+    // 태그 개별 활성화 체크박스 이벤트
+    template.find('.custom-tag-item-checkbox').off('change').on('change', function() {
+        const tagId = $(this).data('id');
+        const enabled = $(this).prop('checked');
+        
+        const currentPresetId = selectedPresetId ?? settings?.currentPreset;
+        const presets = settings?.presets || [];
+        const currentPreset = presets.find(p => p.id === currentPresetId);
+        const customTags = currentPreset?.customTags ?? settings?.customTags ?? [];
+        
+        const tag = customTags.find(t => t.id === tagId);
+        if (tag) {
+            tag.enabled = enabled;
+            
+            // UI 업데이트 - 해당 태그의 컨트롤 영역 활성화/비활성화
+            const tagItem = template.find(`.custom-tag-item[data-id="${tagId}"]`);
+            const controls = tagItem.find('.custom-tag-controls');
+            
+            if (enabled) {
+                controls.removeClass('disabled-section');
+                controls.find('select, input').prop('disabled', false);
+            } else {
+                controls.addClass('disabled-section');
+                controls.find('select, input').prop('disabled', true);
+            }
+            
+            saveSettings();
+            applyCustomTagFonts(true);
+        }
+    });
+    
     // 태그 폰트 드롭다운 변경 이벤트
     template.find('.custom-tag-font-select').off('change').on('change', function() {
         const tagId = $(this).data('id');
@@ -4213,7 +4363,14 @@ function setupCustomTagEventListeners(template) {
     // 폰트 사이즈 입력 필드 이벤트
     template.find('.custom-tag-size-input').off('change').on('change', function() {
         const tagId = $(this).data('id');
-        const newSize = parseInt($(this).val());
+        const inputVal = $(this).val().trim();
+        const newSize = parseInt(inputVal);
+        
+        // 빈 값이면 null로 저장 (기본 메시지 폰트 크기 사용)
+        if (inputVal === '') {
+            updateCustomTagFontSize(template, tagId, null);
+            return;
+        }
         
         if (isNaN(newSize) || newSize < 8 || newSize > 40) {
             alert('폰트 크기는 8px에서 40px 사이여야 합니다.');
@@ -4222,8 +4379,10 @@ function setupCustomTagEventListeners(template) {
             const presets = settings?.presets || [];
             const currentPreset = presets.find(p => p.id === currentPresetId);
             const tag = currentPreset?.customTags?.find(t => t.id === tagId);
-            if (tag) {
-                $(this).val(tag.fontSize || 14);
+            if (tag && tag.fontSize) {
+                $(this).val(tag.fontSize);
+            } else {
+                $(this).val('');
             }
             return;
         }

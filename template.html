@@ -135,9 +135,12 @@
         </div>
         <div class="markdown-font-selectors" id="markdown-font-selectors">
             <!-- 대화문 -->
-            <div class="markdown-font-group">
+            <div class="markdown-font-group" data-type="dialogue">
                 <div class="markdown-font-header">
-                    <label class="markdown-label">대화문</label>
+                    <label class="markdown-item-toggle">
+                        <input type="checkbox" id="markdown-dialogue-enabled" class="markdown-item-checkbox" data-type="dialogue" checked>
+                        <span class="markdown-label">대화문</span>
+                    </label>
                     <span class="markdown-guide">"따옴표"로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
@@ -158,9 +161,12 @@
                 </div>
             </div>
             <!-- 이탤릭체 -->
-            <div class="markdown-font-group">
+            <div class="markdown-font-group" data-type="italic">
                 <div class="markdown-font-header">
-                    <label class="markdown-label">이탤릭체</label>
+                    <label class="markdown-item-toggle">
+                        <input type="checkbox" id="markdown-italic-enabled" class="markdown-item-checkbox" data-type="italic" checked>
+                        <span class="markdown-label">이탤릭체</span>
+                    </label>
                     <span class="markdown-guide">*별표 하나*로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
@@ -181,9 +187,12 @@
                 </div>
             </div>
             <!-- 밑줄 -->
-            <div class="markdown-font-group">
+            <div class="markdown-font-group" data-type="underline">
                 <div class="markdown-font-header">
-                    <label class="markdown-label">밑줄</label>
+                    <label class="markdown-item-toggle">
+                        <input type="checkbox" id="markdown-underline-enabled" class="markdown-item-checkbox" data-type="underline" checked>
+                        <span class="markdown-label">밑줄</span>
+                    </label>
                     <span class="markdown-guide">__밑줄__로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
@@ -204,9 +213,12 @@
                 </div>
             </div>
             <!-- 강조 -->
-            <div class="markdown-font-group">
+            <div class="markdown-font-group" data-type="strong">
                 <div class="markdown-font-header">
-                    <label class="markdown-label">강조</label>
+                    <label class="markdown-item-toggle">
+                        <input type="checkbox" id="markdown-strong-enabled" class="markdown-item-checkbox" data-type="strong" checked>
+                        <span class="markdown-label">강조</span>
+                    </label>
                     <span class="markdown-guide">**별표 둘**로 둘러싸인 텍스트</span>
                 </div>
                 <div class="markdown-font-controls">
