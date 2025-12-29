@@ -1475,6 +1475,40 @@
     gap: 10px;
 }
 
+/* 태그 개별 활성화 토글 */
+.custom-tag-item-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.custom-tag-item-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--SmartThemeQuoteColor);
+}
+
+.custom-tag-item-toggle .custom-tag-name {
+    cursor: pointer;
+}
+
+/* 태그 컨트롤 영역 */
+.custom-tag-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    transition: opacity 0.2s ease;
+}
+
+.custom-tag-controls.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .custom-tag-control-row {
     display: flex;
     align-items: center;
@@ -1798,6 +1832,12 @@
     pointer-events: none;
 }
 
+/* 마크다운 개별 항목 비활성화 스타일 */
+.markdown-font-controls.disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .markdown-font-group {
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
@@ -1818,6 +1858,27 @@
     font-size: calc(var(--mainFontSize) * 0.95);
     font-weight: 600;
     min-width: 70px;
+}
+
+/* 마크다운 개별 항목 활성화 토글 */
+.markdown-item-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.markdown-item-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--SmartThemeQuoteColor);
+}
+
+.markdown-item-toggle .markdown-label {
+    cursor: pointer;
+    margin: 0;
 }
 
 .markdown-guide {
