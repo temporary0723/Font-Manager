@@ -1153,8 +1153,18 @@ function setupCustomTagObserver() {
                         const mesId = mesElement.getAttribute('mesid');
                         if (mesId) {
                             const messageContent = target;
-                            // 이미 처리된 메시지에서 번역문이 있으면 재처리를 위해 제거
-                            if (messageContent.hasAttribute('data-tag-processed')) {
+                            if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                                // .mes_text 내용이 바뀔 때마다 재적용 예약 (스탠드얼론 동작)
+                                // - 최초 로딩: 아직 처리 전이어도 적용
+                                // - 이미 처리된 뒤 SillyTavern 등이 .mes_text를 다시 그리면(덮어쓰면) 처리 표시 제거 후 재적용
+                                if (messageContent.hasAttribute('data-tag-processed')) {
+                                    messageContent.removeAttribute('data-tag-processed');
+                                    processedMessages.delete(mesElement);
+                                }
+                                shouldApply = true;
+                                if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] Observer: .mes_text 내용 변경, mesId=', mesId, 'added=', mutation.addedNodes.length, 'removed=', mutation.removedNodes.length, '(재적용 예약)');
+                            } else if (messageContent.hasAttribute('data-tag-processed')) {
+                                // 자식 목록 변경 없이 다른 mutation인 경우: 번역문 있으면 재처리
                                 const chatData = getChatData();
                                 if (chatData) {
                                     const messageIndex = parseInt(mesId);
@@ -1165,11 +1175,6 @@ function setupCustomTagObserver() {
                                         shouldApply = true;
                                     }
                                 }
-                            } else if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
-                                // 최초 로딩: .mes_text에 내용이 채워질 때(아직 data-tag-processed 없음)에도 적용
-                                // (LLM Translator의 updateMessageBlock 등이 DOM을 나중에 채우는 경우 대응)
-                                shouldApply = true;
-                                if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] Observer: .mes_text 내용 변경 감지, mesId=', mesId, 'added=', mutation.addedNodes.length, 'removed=', mutation.removedNodes.length);
                             }
                         }
                     }
