@@ -444,9 +444,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                                   messageContent.querySelector('[contenteditable="true"]') !== null;
         
         // 에디터 모드인 경우 태그를 적용하지 않음
-        if (hasTextarea || isContentEditable) {
-            return;
-        }
+        if (hasTextarea || isContentEditable) return;
         
         // 이미 처리된 표시가 있는지 확인 (data 속성으로 확인)
         // updateMessageBlock으로 인한 재렌더링인 경우 다시 처리하기 위해
@@ -1125,16 +1123,23 @@ function setupCustomTagObserver() {
                     if (mesElement) {
                         const mesId = mesElement.getAttribute('mesid');
                         if (mesId) {
-                            // 번역문이 표시되는 경우 재처리를 위해 data-tag-processed 제거
                             const messageContent = target;
-                            if (messageContent.hasAttribute('data-tag-processed')) {
-                                // chatData에서 번역문 확인
+                            if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                                // .mes_text 내용이 바뀔 때마다 재적용 예약 (스탠드얼론 동작)
+                                // - 최초 로딩: 아직 처리 전이어도 적용
+                                // - 이미 처리된 뒤 SillyTavern 등이 .mes_text를 다시 그리면(덮어쓰면) 처리 표시 제거 후 재적용
+                                if (messageContent.hasAttribute('data-tag-processed')) {
+                                    messageContent.removeAttribute('data-tag-processed');
+                                    processedMessages.delete(mesElement);
+                                }
+                                shouldApply = true;
+                            } else if (messageContent.hasAttribute('data-tag-processed')) {
+                                // 자식 목록 변경 없이 다른 mutation인 경우: 번역문 있으면 재처리
                                 const chatData = getChatData();
                                 if (chatData) {
                                     const messageIndex = parseInt(mesId);
                                     const message = chatData[messageIndex];
                                     if (message?.extra?.display_text) {
-                                        // 번역문이 있으면 재처리를 위해 속성 제거
                                         messageContent.removeAttribute('data-tag-processed');
                                         processedMessages.delete(mesElement);
                                         shouldApply = true;
@@ -4936,18 +4941,17 @@ function setupSillyTavernEventListeners() {
     });
     
     // 메시지 렌더링 완료 시 (AI 메시지)
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId) => {
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, () => {
         debounceApply(false, 100);
     });
     
     // 메시지 렌더링 완료 시 (사용자 메시지)
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, (messageId) => {
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, () => {
         debounceApply(false, 100);
     });
     
-    // 메시지 스와이프 시
+    // 메시지 스와이프 시: 처리 표시만 제거. 실제 적용은 메시지 로드 후 .mes_text 변경 시 Observer가 처리
     eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
-        // 스와이프된 메시지의 처리 상태 제거
         const mesElement = document.querySelector(`.mes[mesid="${messageId}"]`);
         if (mesElement) {
             const mesText = mesElement.querySelector('.mes_text');
@@ -4956,7 +4960,8 @@ function setupSillyTavernEventListeners() {
                 processedMessages.delete(mesElement);
             }
         }
-        debounceApply(false, 100);
+        // debounceApply 호출 안 함: 스와이프 직후엔 메시지가 아직 로드되지 않을 수 있으므로,
+        // 실제 내용이 .mes_text에 채워질 때 Observer가 감지해 한 번만 적용
     });
     
     // 메시지 업데이트 시 (편집 등)
