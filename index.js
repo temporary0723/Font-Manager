@@ -1125,21 +1125,23 @@ function setupCustomTagObserver() {
                     if (mesElement) {
                         const mesId = mesElement.getAttribute('mesid');
                         if (mesId) {
-                            // 번역문이 표시되는 경우 재처리를 위해 data-tag-processed 제거
                             const messageContent = target;
+                            // 이미 처리된 메시지에서 번역문이 있으면 재처리를 위해 제거
                             if (messageContent.hasAttribute('data-tag-processed')) {
-                                // chatData에서 번역문 확인
                                 const chatData = getChatData();
                                 if (chatData) {
                                     const messageIndex = parseInt(mesId);
                                     const message = chatData[messageIndex];
                                     if (message?.extra?.display_text) {
-                                        // 번역문이 있으면 재처리를 위해 속성 제거
                                         messageContent.removeAttribute('data-tag-processed');
                                         processedMessages.delete(mesElement);
                                         shouldApply = true;
                                     }
                                 }
+                            } else if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                                // 최초 로딩: .mes_text에 내용이 채워질 때(아직 data-tag-processed 없음)에도 적용
+                                // (LLM Translator의 updateMessageBlock 등이 DOM을 나중에 채우는 경우 대응)
+                                shouldApply = true;
                             }
                         }
                     }
