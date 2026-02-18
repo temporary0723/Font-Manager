@@ -238,9 +238,6 @@ const processedMessages = new Set();
 // Observer 인스턴스 저장 (disconnect/reconnect용)
 let customTagObserverInstance = null;
 
-// 태그 커스텀 디버그 로그 (원인 확인 후 false로 끄기)
-const TAG_CUSTOM_DEBUG = true;
-
 // 모든 태그 커스텀 폰트 제거
 function removeAllCustomTagFonts() {
     // 모든 메시지에서 태그 폰트 span만 제거 (구조는 유지)
@@ -298,12 +295,6 @@ function applyCustomTagFonts(forceRefresh = false) {
     // 성능 측정 시작 (개발자 도구 콘솔에서 확인 가능)
     const perfStart = performance.now();
     
-    if (TAG_CUSTOM_DEBUG) {
-        const mesCount = document.querySelectorAll('.mes').length;
-        const chatData = getChatData();
-        console.log('[Font-Manager 태그] applyCustomTagFonts 시작, forceRefresh=', forceRefresh, 'DOM .mes 개수=', mesCount, 'chat 길이=', chatData?.length ?? 0);
-    }
-    
     // Observer를 일시적으로 비활성화하여 무한 루프 방지
     if (customTagObserverInstance) {
         customTagObserverInstance.disconnect();
@@ -350,10 +341,7 @@ function applyCustomTagFonts(forceRefresh = false) {
     
     // chatData 한 번만 가져오기
     const chatData = getChatData();
-    if (!chatData) {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] applyCustomTagFonts 중단: chatData 없음');
-        return;
-    }
+    if (!chatData) return;
     
     // 폰트 정보 미리 가져오기
     const fonts = settings?.fonts || [];
@@ -440,22 +428,15 @@ function applyCustomTagFonts(forceRefresh = false) {
         
         // 이미 처리된 메시지이고 강제 새로고침이 아닌 경우 건너뛰기
         if (!forceRefresh && processedMessages.has(messageElement)) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '건너뜀: 이미 처리됨(processedMessages)');
             return;
         }
         
         const messageIndex = parseInt(mesId);
         const message = chatData[messageIndex];
-        if (!message || !message.mes) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '건너뜀: message 없음 또는 message.mes 없음');
-            return;
-        }
+        if (!message || !message.mes) return;
         
         const messageContent = messageElement.querySelector('.mes_text');
-        if (!messageContent) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '건너뜀: .mes_text 없음');
-            return;
-        }
+        if (!messageContent) return;
         
         // 에디터 모드인지 확인 (textarea나 contenteditable 요소가 있으면 에디터 모드)
         const hasTextarea = messageContent.querySelector('textarea') !== null;
@@ -463,10 +444,7 @@ function applyCustomTagFonts(forceRefresh = false) {
                                   messageContent.querySelector('[contenteditable="true"]') !== null;
         
         // 에디터 모드인 경우 태그를 적용하지 않음
-        if (hasTextarea || isContentEditable) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '건너뜀: 에디터 모드');
-            return;
-        }
+        if (hasTextarea || isContentEditable) return;
         
         // 이미 처리된 표시가 있는지 확인 (data 속성으로 확인)
         // updateMessageBlock으로 인한 재렌더링인 경우 다시 처리하기 위해
@@ -478,7 +456,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 messageContent.removeAttribute('data-tag-processed');
                 processedMessages.delete(messageElement);
             } else {
-                if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '건너뜀: 이미 처리됨(data-tag-processed), 번역문 없음');
                 return;
             }
         }
@@ -487,10 +464,7 @@ function applyCustomTagFonts(forceRefresh = false) {
         // SillyTavern sanitization으로 인해 클래스 이름이 변경될 수 있음
         const hasLlmTranslatorDetails = messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details') !== null;
         
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, 'hasLlmTranslatorDetails=', hasLlmTranslatorDetails, 'details 클래스 있음=', !!messageContent.querySelector('.llm-translator-details, .custom-llm-translator-details, .custom_llm-translator-details, .custom-llm_translator-details'));
-        
         if (hasLlmTranslatorDetails) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '→ details 구조로 태그 적용 처리 중');
             // LLM Translator의 details 구조: 원본/번역문 메시지에서 태그를 찾아 DOM에 적용
             let hasChanges = false;
             
@@ -777,7 +751,6 @@ function applyCustomTagFonts(forceRefresh = false) {
                 processedMessages.add(messageElement);
             }
         } else {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] mesId=', mesId, '→ details 없음, 일반 모드로 태그 적용');
             // 일반 모드: display_text 유무에 따라 처리 방식 분기
             const sourceText = message.mes;
             const hasDisplayText = message.extra?.display_text;
@@ -1128,10 +1101,8 @@ function setupCustomTagObserver() {
             clearTimeout(applyTimer);
         }
         pendingApply = true;
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] applyWithDebounce 예약, forceRefresh=', forceRefresh, '(150ms 후 실행)');
         applyTimer = setTimeout(() => {
             if (pendingApply) {
-                if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] applyCustomTagFonts 실행, forceRefresh=', forceRefresh);
                 applyCustomTagFonts(forceRefresh);
                 pendingApply = false;
             }
@@ -1162,7 +1133,6 @@ function setupCustomTagObserver() {
                                     processedMessages.delete(mesElement);
                                 }
                                 shouldApply = true;
-                                if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] Observer: .mes_text 내용 변경, mesId=', mesId, 'added=', mutation.addedNodes.length, 'removed=', mutation.removedNodes.length, '(재적용 예약)');
                             } else if (messageContent.hasAttribute('data-tag-processed')) {
                                 // 자식 목록 변경 없이 다른 mutation인 경우: 번역문 있으면 재처리
                                 const chatData = getChatData();
@@ -1191,7 +1161,6 @@ function setupCustomTagObserver() {
                                 if (mesId && !newMessages.has(mesId)) {
                                     newMessages.add(mesId);
                                     shouldApply = true;
-                                    if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] Observer: 새 .mes 추가 감지, mesId=', mesId);
                                 }
                             } else if (node.querySelector) {
                                 // 하위에 .mes가 있는지 확인
@@ -1304,7 +1273,6 @@ function setupCustomTagObserver() {
         
         // 새 메시지가 추가되었거나 에디터가 닫혔을 때 태그 적용
         if (shouldApply || shouldCheckEditorClose) {
-            if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] Observer: apply 예약, shouldApply=', shouldApply, 'shouldCheckEditorClose=', shouldCheckEditorClose);
             applyWithDebounce(shouldCheckEditorClose);
         }
     });
@@ -4945,7 +4913,6 @@ function updateAllFonts() {
     startThemeDetection();
     // 태그 커스텀 옵저버 시작
     setTimeout(() => {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] 초기 로드: setupCustomTagObserver + applyCustomTagFonts 실행 (로드 1초 후)');
         setupCustomTagObserver();
         applyCustomTagFonts();
     }, 1000);
@@ -4970,26 +4937,21 @@ function setupSillyTavernEventListeners() {
     
     // 채팅 변경 시 (채팅방 전환, 새 채팅 로드)
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] 이벤트: CHAT_CHANGED → 500ms 후 forceRefresh 적용 예약');
         debounceApply(true, 500); // forceRefresh로 모든 메시지 재처리
     });
     
     // 메시지 렌더링 완료 시 (AI 메시지)
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId) => {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] 이벤트: CHARACTER_MESSAGE_RENDERED, messageId=', messageId);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, () => {
         debounceApply(false, 100);
     });
     
     // 메시지 렌더링 완료 시 (사용자 메시지)
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, (messageId) => {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] 이벤트: USER_MESSAGE_RENDERED, messageId=', messageId);
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, () => {
         debounceApply(false, 100);
     });
     
-    // 메시지 스와이프 시
+    // 메시지 스와이프 시: 처리 표시만 제거. 실제 적용은 메시지 로드 후 .mes_text 변경 시 Observer가 처리
     eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
-        if (TAG_CUSTOM_DEBUG) console.log('[Font-Manager 태그] 이벤트: MESSAGE_SWIPED, messageId=', messageId);
-        // 스와이프된 메시지의 처리 상태 제거
         const mesElement = document.querySelector(`.mes[mesid="${messageId}"]`);
         if (mesElement) {
             const mesText = mesElement.querySelector('.mes_text');
@@ -4998,7 +4960,8 @@ function setupSillyTavernEventListeners() {
                 processedMessages.delete(mesElement);
             }
         }
-        debounceApply(false, 100);
+        // debounceApply 호출 안 함: 스와이프 직후엔 메시지가 아직 로드되지 않을 수 있으므로,
+        // 실제 내용이 .mes_text에 채워질 때 Observer가 감지해 한 번만 적용
     });
     
     // 메시지 업데이트 시 (편집 등)
