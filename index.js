@@ -4940,15 +4940,8 @@ function setupSillyTavernEventListeners() {
         debounceApply(true, 500); // forceRefresh로 모든 메시지 재처리
     });
     
-    // 메시지 렌더링 완료 시 (AI 메시지)
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, () => {
-        debounceApply(false, 100);
-    });
-    
-    // 메시지 렌더링 완료 시 (사용자 메시지)
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, () => {
-        debounceApply(false, 100);
-    });
+    // 메시지 렌더링 완료(CHARACTER_MESSAGE_RENDERED / USER_MESSAGE_RENDERED) 시에는 적용 예약 안 함.
+    // 메시지가 그려지면 .mes_text가 바뀌어 Observer가 이미 적용을 예약하므로, 이벤트에서 또 예약하면 두 번 적용됨.
     
     // 메시지 스와이프 시: 처리 표시만 제거. 실제 적용은 메시지 로드 후 .mes_text 변경 시 Observer가 처리
     eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
